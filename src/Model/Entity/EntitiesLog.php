@@ -12,7 +12,7 @@ use Cake\ORM\Entity;
  * @property string $entity_class
  * @property int $entity_id
  * @property int $user_id
- * @property string $type
+ * @property \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $type
  * @property \Cake\I18n\DateTime $datetime
  *
  * @property \Cake\EntitiesLogger\Model\Entity\User $user

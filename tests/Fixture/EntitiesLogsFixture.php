@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Test\Fixture;
 
+use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\TestSuite\Fixture\TestFixture;
 
 /**
@@ -18,11 +19,11 @@ class EntitiesLogsFixture extends TestFixture
         $this->records = [
             [
                 'id' => 1,
-                'entity_class' => 'Lorem ipsum dolor sit amet',
+                'entity_class' => 'App\Model\Entity\Article',
                 'entity_id' => 1,
                 'user_id' => 1,
-                'type' => 'Lorem ipsum dolor sit amet',
-                'datetime' => '2025-06-16 20:10:24',
+                'type' => EntitiesLogType::Created,
+                'datetime' => '2025-06-16 20:22:06',
             ],
         ];
 
