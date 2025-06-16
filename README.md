@@ -4,8 +4,12 @@ You can install the plugin via composer:
 composer require --prefer-dist mirko-pagliai/cakephp-entities-logger
 ```
 
-## Create the table
+## Load the plugin
+```php
+$this->addPlugin('Cake/EntitiesLogger');
+```
 
+## Create the table
 ```sql
 CREATE TABLE IF NOT EXISTS `entities_changes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
