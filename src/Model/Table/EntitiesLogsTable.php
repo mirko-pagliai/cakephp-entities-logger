@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Model\Table;
 
+use Cake\Database\Type\EnumType;
+use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -39,6 +41,8 @@ class EntitiesLogsTable extends Table
         $this->setDisplayField('entity_class');
         $this->setPrimaryKey('id');
 
+        $this->getSchema()->setColumnType('type', EnumType::from(EntitiesLogType::class));
+
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
@@ -70,8 +74,7 @@ class EntitiesLogsTable extends Table
             ->notEmptyString('user_id');
 
         $validator
-            ->scalar('type')
-            ->maxLength('type', 100)
+            ->enum('type', EntitiesLogType::class)
             ->requirePresence('type', 'create')
             ->notEmptyString('type');
 
