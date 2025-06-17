@@ -12,7 +12,7 @@ use Cake\Validation\Validator;
 /**
  * EntitiesLogs Model
  *
- * @property \Cake\EntitiesLogger\Model\Table\UsersTable&\Cake\ORM\Association\BelongsTo $Users
+ * @property \App\Model\Table\UsersTable&\Cake\ORM\Association\BelongsTo $Users
  *
  * @method \Cake\EntitiesLogger\Model\Entity\EntitiesLog newEmptyEntity()
  * @method \Cake\EntitiesLogger\Model\Entity\EntitiesLog newEntity(array $data, array $options = [])
@@ -46,7 +46,7 @@ class EntitiesLogsTable extends Table
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
-            'className' => 'Cake/EntitiesLogger.Users',
+            'className' => 'Users',
         ]);
     }
 
