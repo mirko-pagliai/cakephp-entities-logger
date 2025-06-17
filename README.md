@@ -10,8 +10,14 @@ $this->addPlugin('Cake/EntitiesLogger');
 ```
 
 ## Create the table
+Now you need to create the table that the plugin will use. The best way is using migrations:
+```bash
+bin/cake migrations migrate -p Cake/EntitiesLogger
+```
+
+Alternatively (not recommended) you can run the `sql` code directly:
 ```sql
-CREATE TABLE IF NOT EXISTS `entities_changes` (
+CREATE TABLE IF NOT EXISTS `entities_logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `entity_class` varchar(255) NOT NULL,
   `entity_id` int(11) NOT NULL,
