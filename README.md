@@ -2,6 +2,13 @@
 
 ![screenshot_phpmyadmin.png](docs/screenshot_phpmyadmin.png)
 
+From this screenshot of the table we can see that:
+- user `3` created the `Article` entity `2`;
+- user `1` then modified it;
+- user `2` created the `Comment` entity `36`;
+- user `1` then modified it;
+- user `5` created the `Comment` entity `37`;
+- user `1` then deleted it;
 
 ## Installation
 You can install the plugin via composer:
