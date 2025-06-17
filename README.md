@@ -1,3 +1,8 @@
+# cakephp-entities-logger
+
+![screenshot_phpmyadmin.png](docs/screenshot_phpmyadmin.png)
+
+
 ## Installation
 You can install the plugin via composer:
 ```bash
