@@ -15,7 +15,7 @@ use Cake\ORM\Entity;
  * @property \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $type
  * @property \Cake\I18n\DateTime $datetime
  *
- * @property \Cake\EntitiesLogger\Model\Entity\User $user
+ * @property \App\Model\Entity\User $user
  */
 class EntitiesLog extends Entity
 {
