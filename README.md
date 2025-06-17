@@ -16,13 +16,10 @@ You can install the plugin via composer:
 composer require --prefer-dist mirko-pagliai/cakephp-entities-logger
 ```
 
-## Load the plugin
-```php
-$this->addPlugin('Cake/EntitiesLogger');
-```
-
 ## Create the table
-Now you need to create the table that the plugin will use. The best way is using migrations:
+Now you need to create the table that the plugin will use to keep changes to the entities you want.
+
+The best way is using migrations:
 ```bash
 bin/cake migrations migrate -p Cake/EntitiesLogger
 ```
@@ -38,4 +35,27 @@ CREATE TABLE IF NOT EXISTS `entities_logs` (
   `datetime` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+```
+
+## Add the behavior
+
+Add the `Cake/EntitiesLogger.EntitiesLog` behavior to the tables you want.
+
+Inside the `initialize()` method of your tables:
+```php
+namespace App\Model\Table;
+
+use Cake\ORM\Table;
+
+class ArticlesTable extends Table
+{
+    public function initialize(array $config): void
+    {
+        // ...
+        
+        $this->addBehavior('Cake/EntitiesLogger.EntitiesLog');
+        
+        // ...
+    }
+}
 ```
