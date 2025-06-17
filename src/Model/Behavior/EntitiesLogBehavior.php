@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Model\Behavior;
 
-use Authentication\IdentityInterface;
 use Cake\Datasource\EntityInterface;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
@@ -42,9 +41,9 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Retrieves the identity of the currently authenticated user.
      *
-     * @return \Authentication\IdentityInterface The identity object representing the authenticated user.
+     * @return \Cake\Datasource\EntityInterface The identity object representing the authenticated user.
      */
-    protected function getIdentity(): IdentityInterface
+    protected function getIdentity(): EntityInterface
     {
         /** @var \Cake\Http\ServerRequest $Request */
         $Request = Router::getRequest();
