@@ -47,7 +47,7 @@ class EntitiesLogBehavior extends Behavior
     {
         /** @var \Cake\Http\ServerRequest $Request */
         $Request = Router::getRequest();
-        /** @var \Authentication\IdentityInterface $Identity */
+        /** @var \Cake\Datasource\EntityInterface $Identity */
         $Identity = $Request->getAttribute('identity');
 
         return $Identity;
@@ -64,8 +64,8 @@ class EntitiesLogBehavior extends Behavior
     {
         return $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
-            'entity_id' => $entity->id,
-            'user_id' => $this->getIdentity()->id,
+            'entity_id' => $entity->get('id'),
+            'user_id' => $this->getIdentity()->get('id'),
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
         ]);
