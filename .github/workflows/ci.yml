@@ -97,3 +97,36 @@ jobs:
       - name: Run PHPUnit
         run: |
           vendor/bin/phpunit --display-incomplete
+
+  cs-stan:
+    name: Coding Standard & Static Analysis
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl
+          coverage: none
+          tools: cs2pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Composer install
+        uses: ramsey/composer-install@v3
+
+      - name: Run phpcs
+        if: always()
+        run: vendor/bin/phpcs --report-full --report-checkstyle=./phpcs-report.xml
+
+      - name: Show phpcs results in PR
+        run: cs2pr ./phpcs-report.xml
+
+      - name: Run phpstan
+        if: always()
+        run: vendor/bin/phpstan analyse --error-format=github
