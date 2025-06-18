@@ -95,7 +95,8 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: EntitiesLogType::Deleted);
+        $entitiesLogType = EntitiesLogType::Deleted;
+        $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: $entitiesLogType);
 
         $this->EntitiesLogsTable->saveOrFail($EntitiesLog);
     }
