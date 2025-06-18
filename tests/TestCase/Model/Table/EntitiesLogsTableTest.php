@@ -31,8 +31,7 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $config = $this->getTableLocator()->exists('EntitiesLogs') ? [] : ['className' => EntitiesLogsTable::class];
-        $this->EntitiesLogs = $this->getTableLocator()->get('EntitiesLogs', $config);
+        $this->EntitiesLogs = $this->fetchTable('EntitiesLogs');
     }
 
     #[Test]
