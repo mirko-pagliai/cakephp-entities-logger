@@ -94,12 +94,11 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Handles operations to be performed after saving an entity, such as logging
-     * the entity's creation or update action.
+     * Handles the logic to be executed after an entity is saved.
      *
-     * @param \Cake\Event\EventInterface $event The event that was triggered.
-     * @param \Cake\Datasource\EntityInterface $entity The entity that was saved.
-     * @param \ArrayObject $options Options passed to the save operation.
+     * @param \Cake\Event\EventInterface $event The event triggered after the save operation.
+     * @param \Cake\Datasource\EntityInterface $entity The entity instance that was saved.
+     * @param \ArrayObject $options Additional options used for the save operation.
      * @return void
      */
     public function afterSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
@@ -107,16 +106,17 @@ class EntitiesLogBehavior extends Behavior
         $entitiesLogType = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
         $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: $entitiesLogType);
 
-        $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+        $result = $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+
+        $event->setResult($result);
     }
 
     /**
-     * Handles operations to be performed after deleting an entity, such as logging
-     * the entity's deletion action.
+     * Handles the logic to be executed after an entity is deleted.
      *
-     * @param \Cake\Event\EventInterface $event The event that was triggered.
-     * @param \Cake\Datasource\EntityInterface $entity The entity that was deleted.
-     * @param \ArrayObject $options Options passed to the delete operation.
+     * @param \Cake\Event\EventInterface $event The event triggered after the delete operation.
+     * @param \Cake\Datasource\EntityInterface $entity The entity instance that was deleted.
+     * @param \ArrayObject $options Additional options used for the delete operation.
      * @return void
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
@@ -124,6 +124,8 @@ class EntitiesLogBehavior extends Behavior
         $entitiesLogType = EntitiesLogType::Deleted;
         $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: $entitiesLogType);
 
-        $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+        $result = $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+
+        $event->setResult($result);
     }
 }
