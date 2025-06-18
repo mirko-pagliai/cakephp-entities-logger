@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Cake\Cache\Cache;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Migrations\TestSuite\Migrator;
@@ -18,6 +19,15 @@ require_once CORE_PATH . 'config' . DS . 'bootstrap.php';
 
 Configure::write('debug', true);
 
+/** @todo to be removed with CakePHP >= 5.1 */
+$translationsName = version_compare(Configure::version(), '5.1', '>=') ? '_cake_translations_' : '_cake_core_';
+Cache::setConfig([
+    $translationsName => [
+        'engine' => 'File',
+        'prefix' => 'cake_core_',
+        'serialize' => true,
+    ],
+]);
 ConnectionManager::setConfig('test', ['url' => 'sqlite:///' . TMP . 'test.sq3']);
 
 $migrator = new Migrator();
