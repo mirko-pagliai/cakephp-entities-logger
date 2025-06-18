@@ -56,7 +56,7 @@ jobs:
     name: Windows - PHP 8.4
 
     env:
-      EXTENSIONS: mbstring, intl
+      EXTENSIONS: mbstring, intl, pdo_sqlite
       PHP_VERSION: '8.4'
 
     steps:
