@@ -12,7 +12,8 @@
   ],
   "require": {
     "php": ">=8.1",
-    "cakephp/cakephp": "^5.0"
+    "cakephp/cakephp": "^5.0",
+    "cakephp/migrations": "^4.0"
   },
   "require-dev": {
     "cakephp/cakephp-codesniffer": "^5.2",
@@ -23,6 +24,12 @@
   "autoload": {
     "psr-4": {
       "Cake\\EntitiesLogger\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\": "tests/test_app/TestApp",
+      "Cake\\EntitiesLogger\\Test\\": "tests"
     }
   },
   "config": {
