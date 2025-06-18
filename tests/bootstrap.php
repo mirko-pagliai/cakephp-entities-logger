@@ -28,6 +28,7 @@ Cache::setConfig([
         'serialize' => true,
     ],
 ]);
+
 ConnectionManager::setConfig('test', ['url' => 'sqlite:///' . TMP . 'test.sq3']);
 
 $migrator = new Migrator();
