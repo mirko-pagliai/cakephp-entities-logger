@@ -12,8 +12,9 @@
   ],
   "require": {
     "php": ">=8.1",
-    "cakephp/cakephp": "^5.0",
-    "cakephp/migrations": "^4.0"
+    "cakephp/cakephp": "^5.0.3",
+    "cakephp/chronos": "^3.1",
+    "cakephp/migrations": "^4.5"
   },
   "require-dev": {
     "cakephp/cakephp-codesniffer": "^5.2",
