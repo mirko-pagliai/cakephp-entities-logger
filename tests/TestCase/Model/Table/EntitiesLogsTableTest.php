@@ -18,11 +18,10 @@ class EntitiesLogsTableTest extends TestCase
     protected EntitiesLogsTable $EntitiesLogs;
 
     /**
-     * @var list<string>
+     * @var array<string>
      */
     protected array $fixtures = [
         EntitiesLogsFixture::class,
-        'plugin.Cake/EntitiesLogger.Users',
     ];
 
     /**
