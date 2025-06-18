@@ -1,0 +1,16 @@
+includes:
+    - vendor/cakedc/cakephp-phpstan/extension.neon
+
+parameters:
+    level: 9
+
+    paths:
+        - src
+        - tests
+
+    bootstrapFiles:
+        - tests/bootstrap.php
+
+    ignoreErrors:
+        - identifier: missingType.generics
+        - identifier: missingType.iterableValue
