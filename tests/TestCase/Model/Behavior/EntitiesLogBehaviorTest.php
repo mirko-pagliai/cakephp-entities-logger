@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 
+use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Entity;
@@ -82,6 +83,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
+        $this->expectException(MissingPropertyException::class);
         $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
         $Behavior->getIdentityId();
     }

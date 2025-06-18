@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Cake\EntitiesLogger\Model\Behavior;
 
 use Cake\Datasource\EntityInterface;
+use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
@@ -41,11 +42,11 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Retrieves the identity id from the current request.
+     * Retrieves the identity ID from the current request.
      *
-     * @return int The id of the identity associated with the current request.
+     * @return int The ID of the current identity.
      * @throws \RuntimeException If the request does not have an identity attribute.
-     * @throws \RuntimeException If the identity object does not have a valid id.
+     * @throws \Cake\Core\Exception\MissingPropertyException If the identity attribute does not have an `id` property.
      * @throws \RuntimeException If the request is not an instance of \Cake\Http\ServerRequest.
      */
     protected function getIdentityId(): int
@@ -62,7 +63,7 @@ class EntitiesLogBehavior extends Behavior
         }
 
         if (!isset($Identity->id)) {
-            throw new RuntimeException('`' . $Identity::class . '::$id` is null, expected non-null value.');
+            throw new MissingPropertyException('`' . $Identity::class . '::$id` is null, expected non-null value.');
         }
 
         return $Identity->id;
