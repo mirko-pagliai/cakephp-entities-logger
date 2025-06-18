@@ -22,7 +22,7 @@ class EntitiesLogsFixture extends TestFixture
                 'entity_class' => 'App\Model\Entity\Article',
                 'entity_id' => 1,
                 'user_id' => 1,
-                'type' => EntitiesLogType::Created,
+                'type' => EntitiesLogType::Created->value,
                 'datetime' => '2025-06-16 20:22:06',
             ],
         ];
