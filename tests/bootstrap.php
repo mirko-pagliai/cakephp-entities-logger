@@ -8,6 +8,7 @@ use Migrations\TestSuite\Migrator;
 
 define('ROOT', dirname(__DIR__) . DS);
 const CORE_PATH = ROOT . 'vendor' . DS . 'cakephp' . DS . 'cakephp' . DS;
+const APP_DIR = 'test_app' . DS;
 define('TMP', sys_get_temp_dir() . DS . 'cakephp-entities-logger' . DS);
 
 // phpcs:disable
@@ -18,6 +19,14 @@ require dirname(__DIR__) . '/vendor/autoload.php';
 require_once CORE_PATH . 'config' . DS . 'bootstrap.php';
 
 Configure::write('debug', true);
+Configure::write('App', [
+    'namespace' => 'App',
+    'encoding' => 'UTF-8',
+    'base' => false,
+    'baseUrl' => false,
+    'dir' => APP_DIR,
+    'fullBaseUrl' => 'http://localhost',
+]);
 
 /** @todo to be removed with CakePHP >= 5.1 */
 $translationsName = version_compare(Configure::version(), '5.1', '>=') ? '_cake_translations_' : '_cake_core_';
