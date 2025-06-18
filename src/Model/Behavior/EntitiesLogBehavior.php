@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Model\Behavior;
 
-use ArrayObject;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
@@ -43,7 +42,7 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Retrieves the identity ID from the current request.
+     * Internal method to retrieve the identity ID from the current request.
      *
      * @return int The ID of the current identity.
      * @throws \RuntimeException If the request does not have an identity attribute.
@@ -71,7 +70,7 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Builds a new log entity based on the provided entity and log type.
+     * Internal method to build a new log entity based on the provided entity and log type.
      *
      * @param \Cake\Datasource\EntityInterface $entity The entity object for which the log is being created.
      * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log to be created for the entity.
@@ -94,19 +93,31 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
+     * Internal method to save a log entry for the given entity and log type.
+     *
+     * @param \Cake\Datasource\EntityInterface $entity The entity associated with the log entry.
+     * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log entry to be created.
+     * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog The saved log entry.
+     */
+    protected function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+    {
+        $entity = $this->buildEntity($entity, $entitiesLogType);
+
+        return $this->EntitiesLogsTable->saveOrFail($entity, ['checkRules' => false]);
+    }
+
+    /**
      * Handles the logic to be executed after an entity is saved.
      *
      * @param \Cake\Event\EventInterface $event The event triggered after the save operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was saved.
-     * @param \ArrayObject $options Additional options used for the save operation.
      * @return void
      */
-    public function afterSave(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
+    public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
         $entitiesLogType = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
-        $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: $entitiesLogType);
 
-        $result = $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+        $result = $this->saveEntitiesLog(entity: $entity, entitiesLogType: $entitiesLogType);
 
         $event->setResult($result);
     }
@@ -116,15 +127,13 @@ class EntitiesLogBehavior extends Behavior
      *
      * @param \Cake\Event\EventInterface $event The event triggered after the delete operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was deleted.
-     * @param \ArrayObject $options Additional options used for the delete operation.
      * @return void
      */
-    public function afterDelete(EventInterface $event, EntityInterface $entity, ArrayObject $options): void
+    public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
         $entitiesLogType = EntitiesLogType::Deleted;
-        $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: $entitiesLogType);
 
-        $result = $this->EntitiesLogsTable->saveOrFail($EntitiesLog, ['checkRules' => $options['checkRules'] ?? true]);
+        $result = $this->saveEntitiesLog(entity: $entity, entitiesLogType: $entitiesLogType);
 
         $event->setResult($result);
     }

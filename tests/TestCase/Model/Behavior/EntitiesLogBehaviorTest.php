@@ -10,14 +10,17 @@ use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
+use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Entity;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
+use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 
 /**
  * EntitiesLogBehaviorTest
@@ -150,5 +153,76 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
         $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
+    }
+
+    #[Test]
+    public function testSaveEntitiesLog(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            {
+                return new EntitiesLog();
+            }
+
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            {
+                return parent::saveEntitiesLog($entity, $entitiesLogType);
+            }
+        };
+
+        $Behavior->EntitiesLogsTable = Mockery::mock(EntitiesLogsTable::class);
+        $Behavior->EntitiesLogsTable->shouldReceive('saveOrFail')
+            ->once()
+            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => false])
+            ->andReturn(new EntitiesLog());
+
+        $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+    }
+
+    #[Test]
+    #[TestWith([EntitiesLogType::Created, true])]
+    #[TestWith([EntitiesLogType::Updated, false])]
+    public function testAfterSave(EntitiesLogType $expectedEntitiesLogType, bool $entityIsNew): void
+    {
+        $Entity = new Article(['id' => 3]);
+        $Entity->setNew($entityIsNew);
+
+        $Table = new Table();
+
+        /** @var \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior&\Mockery\MockInterface $Behavior */
+        $Behavior = Mockery::mock(EntitiesLogBehavior::class . '[saveEntitiesLog]', [$Table]);
+        $Behavior->shouldAllowMockingProtectedMethods();
+        $Behavior
+            ->shouldReceive('saveEntitiesLog')
+            ->with($Entity, $expectedEntitiesLogType)
+            ->once()
+            ->andReturn(new EntitiesLog());
+
+        $Table->behaviors()->set('EntitiesLog', $Behavior);
+
+        $result = $Table->dispatchEvent('Model.afterSave', [$Entity]);
+        $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
+    }
+
+    #[Test]
+    public function testAfterDelete(): void
+    {
+        $Entity = new Article(['id' => 3]);
+
+        $Table = new Table();
+
+        /** @var \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior&\Mockery\MockInterface $Behavior */
+        $Behavior = Mockery::mock(EntitiesLogBehavior::class . '[saveEntitiesLog]', [$Table]);
+        $Behavior->shouldAllowMockingProtectedMethods();
+        $Behavior
+            ->shouldReceive('saveEntitiesLog')
+            ->with($Entity, EntitiesLogType::Deleted)
+            ->once()
+            ->andReturn(new EntitiesLog());
+
+        $Table->behaviors()->set('EntitiesLog', $Behavior);
+
+        $result = $Table->dispatchEvent('Model.afterDelete', [$Entity]);
+        $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
     }
 }
