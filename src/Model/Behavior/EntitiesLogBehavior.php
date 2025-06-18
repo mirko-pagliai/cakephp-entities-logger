@@ -71,7 +71,7 @@ class EntitiesLogBehavior extends Behavior
         ]);
     }
 
-   /**
+    /**
      * Handles actions to be performed after an entity is saved.
      *
      * @param \Cake\Event\EventInterface $event The event that triggered the method.
@@ -93,7 +93,7 @@ class EntitiesLogBehavior extends Behavior
      * @param \Cake\Datasource\EntityInterface $entity The entity object that was deleted.
      * @return void
      */
-    public function afterDelete(EventInterface $event, EntityInterface $entity)
+    public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
         $EntitiesLog = $this->buildEntity(entity: $entity, entitiesLogType: EntitiesLogType::Deleted);
 
