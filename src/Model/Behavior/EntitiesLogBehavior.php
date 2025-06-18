@@ -8,11 +8,13 @@ use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Event\EventInterface;
+use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Behavior;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
+use RuntimeException;
 
 /**
  * Behavior for logging changes to entities.
@@ -39,16 +41,23 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Retrieves the identity of the currently authenticated user.
+     * Retrieves the current identity entity from the request.
      *
-     * @return \Cake\Datasource\EntityInterface The identity object representing the authenticated user.
+     * @return \Cake\Datasource\EntityInterface The identity entity associated with the request.
+     * @throws \RuntimeException If the request instance is invalid or if the identity attribute is missing.
      */
     protected function getIdentity(): EntityInterface
     {
-        /** @var \Cake\Http\ServerRequest $Request */
         $Request = Router::getRequest();
-        /** @var \Cake\Datasource\EntityInterface $Identity */
+        if (!$Request instanceof ServerRequest) {
+            throw new RuntimeException('Unable to retrieve identity. Request is not an instance of Cake\Http\ServerRequest.');
+        }
+
+        /** @var \Cake\Datasource\EntityInterface|null $Identity */
         $Identity = $Request->getAttribute('identity');
+        if (!$Identity) {
+            throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
+        }
 
         return $Identity;
     }
