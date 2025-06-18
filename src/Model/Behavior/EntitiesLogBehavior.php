@@ -30,7 +30,7 @@ class EntitiesLogBehavior extends Behavior
 {
     use LocatorAwareTrait;
 
-    protected EntitiesLogsTable $EntitiesLogsTable;
+    public EntitiesLogsTable $EntitiesLogsTable;
 
     /**
      * @inheritDoc
