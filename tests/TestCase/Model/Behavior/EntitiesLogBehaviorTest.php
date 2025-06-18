@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 
 use App\Model\Entity\Article;
+use App\Model\Entity\User;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
@@ -24,15 +25,23 @@ use PHPUnit\Framework\Attributes\Test;
 #[CoversClass(EntitiesLogBehavior::class)]
 class EntitiesLogBehaviorTest extends TestCase
 {
-    #[Test]
-    public function testGetIdentityId(): void
+    /**
+     * @inheritDoc
+     */
+    protected function setUp(): void
     {
-        $Identity = new Entity(['id' => 1]);
+        parent::setUp();
+
+        $Identity = new User(['id' => 1]);
 
         $Request = new ServerRequest();
         $Request = $Request->withAttribute('identity', $Identity);
         Router::setRequest($Request);
+    }
 
+    #[Test]
+    public function testGetIdentityId(): void
+    {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
             public function getIdentityId(): int
             {
@@ -41,12 +50,14 @@ class EntitiesLogBehaviorTest extends TestCase
         };
 
         $result = $Behavior->getIdentityId();
-        $this->assertSame($Identity->id, $result);
+        $this->assertSame(1, $result);
     }
 
     #[Test]
     public function testGetIdentityIdWithNoRequest(): void
     {
+        Router::reload();
+
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
             public function getIdentityId(): int
             {
@@ -78,7 +89,7 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testGetIdentityIdWithNoIdProperty(): void
     {
         $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', new Entity());
+        $Request = $Request->withAttribute('identity', new User());
         Router::setRequest($Request);
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
@@ -89,7 +100,7 @@ class EntitiesLogBehaviorTest extends TestCase
         };
 
         $this->expectException(MissingPropertyException::class);
-        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
+        $this->expectExceptionMessage('`' . User::class . '::$id` is null, expected non-null value.');
         $Behavior->getIdentityId();
     }
 
