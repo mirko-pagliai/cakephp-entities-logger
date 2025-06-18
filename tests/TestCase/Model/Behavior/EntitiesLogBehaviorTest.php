@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 
-use Cake\Datasource\EntityInterface;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Entity;
@@ -20,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 class EntitiesLogBehaviorTest extends TestCase
 {
     #[Test]
-    public function testGetIdentity(): void
+    public function testGetIdentityId(): void
     {
         $Identity = new Entity(['id' => 1]);
 
@@ -29,43 +28,61 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest($Request);
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentity(): EntityInterface
+            public function getIdentityId(): int
             {
-                return parent::getIdentity();
+                return parent::getIdentityId();
             }
         };
 
-        $result = $Behavior->getIdentity();
-        $this->assertSame($Identity, $result);
+        $result = $Behavior->getIdentityId();
+        $this->assertSame($Identity->id, $result);
     }
 
     #[Test]
-    public function testGetIdentityWithNoRequest(): void
+    public function testGetIdentityIdWithNoRequest(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentity(): EntityInterface
+            public function getIdentityId(): int
             {
-                return parent::getIdentity();
+                return parent::getIdentityId();
             }
         };
 
         $this->expectExceptionMessage('Unable to retrieve identity. Request is not an instance of Cake\Http\ServerRequest.');
-        $Behavior->getIdentity();
+        $Behavior->getIdentityId();
     }
 
     #[Test]
-    public function testGetIdentityWithNoIdentity(): void
+    public function testGetIdentityIdWithNoIdentity(): void
     {
         Router::setRequest(new ServerRequest());
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentity(): EntityInterface
+            public function getIdentityId(): int
             {
-                return parent::getIdentity();
+                return parent::getIdentityId();
             }
         };
 
         $this->expectExceptionMessage('Unable to retrieve identity. Request does not have an identity attribute.');
-        $Behavior->getIdentity();
+        $Behavior->getIdentityId();
+    }
+
+    #[Test]
+    public function testGetIdentityIdWithNoIdProperty(): void
+    {
+        $Request = new ServerRequest();
+        $Request = $Request->withAttribute('identity', new Entity());
+        Router::setRequest($Request);
+
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function getIdentityId(): int
+            {
+                return parent::getIdentityId();
+            }
+        };
+
+        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
+        $Behavior->getIdentityId();
     }
 }

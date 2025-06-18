@@ -41,12 +41,14 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Retrieves the current identity entity from the request.
+     * Retrieves the identity id from the current request.
      *
-     * @return \Cake\Datasource\EntityInterface The identity entity associated with the request.
-     * @throws \RuntimeException If the request instance is invalid or if the identity attribute is missing.
+     * @return int The id of the identity associated with the current request.
+     * @throws \RuntimeException If the request does not have an identity attribute.
+     * @throws \RuntimeException If the identity object does not have a valid id.
+     * @throws \RuntimeException If the request is not an instance of \Cake\Http\ServerRequest.
      */
-    protected function getIdentity(): EntityInterface
+    protected function getIdentityId(): int
     {
         $Request = Router::getRequest();
         if (!$Request instanceof ServerRequest) {
@@ -59,7 +61,11 @@ class EntitiesLogBehavior extends Behavior
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
 
-        return $Identity;
+        if (!isset($Identity->id)) {
+            throw new RuntimeException('`' . $Identity::class . '::$id` is null, expected non-null value.');
+        }
+
+        return $Identity->id;
     }
 
     /**
@@ -74,7 +80,7 @@ class EntitiesLogBehavior extends Behavior
         return $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
             'entity_id' => $entity->get('id'),
-            'user_id' => $this->getIdentity()->get('id'),
+            'user_id' => $this->getIdentityId(),
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
         ]);
