@@ -46,7 +46,7 @@ class EntitiesLogBehavior extends Behavior
      *
      * @return int The ID of the current identity.
      * @throws \RuntimeException If the request does not have an identity attribute.
-     * @throws \Cake\Core\Exception\MissingPropertyException If the identity attribute does not have an `id` property.
+     * @throws \Cake\Datasource\Exception\MissingPropertyException If the identity attribute does not have an `id` property.
      * @throws \RuntimeException If the request is not an instance of \Cake\Http\ServerRequest.
      */
     protected function getIdentityId(): int
@@ -70,17 +70,22 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Constructs a new EntitiesLog entity based on the provided parameters.
+     * Builds a new log entity based on the provided entity and log type.
      *
-     * @param \Cake\Datasource\EntityInterface $entity The entity object related to the log entry.
-     * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log to be created.
-     * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog The newly created EntitiesLog entity.
+     * @param \Cake\Datasource\EntityInterface $entity The entity object for which the log is being created.
+     * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log to be created for the entity.
+     * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog The newly created log entity.
+     * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity's `id` is not set.
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
     {
+        if (!isset($entity->id)) {
+            throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
+        }
+
         return $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
-            'entity_id' => $entity->get('id'),
+            'entity_id' => $entity->id,
             'user_id' => $this->getIdentityId(),
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),

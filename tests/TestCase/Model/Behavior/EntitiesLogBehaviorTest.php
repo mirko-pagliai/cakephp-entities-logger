@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 
+use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
+use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
+use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\Http\ServerRequest;
 use Cake\ORM\Entity;
 use Cake\ORM\Table;
@@ -86,5 +89,19 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->expectException(MissingPropertyException::class);
         $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
         $Behavior->getIdentityId();
+    }
+
+    #[Test]
+    public function testBuildEntityWithNoEntityId(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
+        $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
     }
 }
