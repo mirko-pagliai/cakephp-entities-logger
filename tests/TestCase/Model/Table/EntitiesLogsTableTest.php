@@ -31,7 +31,7 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->EntitiesLogs = $this->fetchTable('EntitiesLogs');
+        $this->EntitiesLogs = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
     }
 
     #[Test]
