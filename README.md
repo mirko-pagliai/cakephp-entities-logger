@@ -16,6 +16,15 @@ You can install the plugin via composer:
 composer require --prefer-dist mirko-pagliai/cakephp-entities-logger
 ```
 
+Then you have to load the plugin. For more information on how to load the plugin,
+please refer to the [CakePHP documentation](https://book.cakephp.org/5/en/plugins.html#loading-a-plugin).
+
+Simply, you can execute the shell command to enable the plugin:
+```bash
+bin/cake plugin load Cake/EntitiesLogger
+```
+This would update your application's bootstrap method.
+
 ## Create the table
 Now you need to create the table that the plugin will use to keep changes to the entities you want.
 
