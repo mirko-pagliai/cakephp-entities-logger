@@ -58,10 +58,7 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::reload();
 
         $this->expectExceptionMessage('Request is not an instance of Cake\Http\ServerRequest.');
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public ServerRequest $request;
-        };
-        $Behavior->getRequest();
+        new EntitiesLogBehavior(new Table());
     }
 
     #[Test]
@@ -166,7 +163,7 @@ class EntitiesLogBehaviorTest extends TestCase
     #[Test]
     public function testSaveEntitiesLog(): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
             protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
             {
                 return new EntitiesLog();
