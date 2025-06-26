@@ -24,6 +24,7 @@ class EntitiesLogsFixture extends TestFixture
                 'user_id' => 1,
                 'type' => EntitiesLogType::Created->value,
                 'datetime' => '2025-06-16 20:22:06',
+                'ip' => '192.168.1.100',
             ],
         ];
 
