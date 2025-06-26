@@ -185,11 +185,13 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $Behavior->EntitiesLogsTable = Mockery::mock(EntitiesLogsTable::class);
-        $Behavior->EntitiesLogsTable->shouldReceive('saveOrFail')
+        /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable&\Mockery\MockInterface $EntitiesLogsTable */
+        $EntitiesLogsTable = Mockery::mock(EntitiesLogsTable::class);
+        $EntitiesLogsTable->shouldReceive('saveOrFail')
             ->once()
             ->with(Mockery::type(EntitiesLog::class), ['checkRules' => false])
             ->andReturn(new EntitiesLog());
+        $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
     }

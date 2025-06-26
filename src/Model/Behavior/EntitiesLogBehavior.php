@@ -61,8 +61,8 @@ class EntitiesLogBehavior extends Behavior
      * Internal method to get the ID of the identity entity associated with the current request.
      *
      * @return int The identity ID.
+     * @throws \Cake\Datasource\Exception\MissingPropertyException If the identity entity does not have a non-null ID property.
      * @throws \RuntimeException If the identity attribute is not present in the request.
-     * @throws \Cake\Core\Exception\MissingPropertyException If the identity entity does not have a valid ID property.
      */
     protected function getIdentityId(): int
     {
