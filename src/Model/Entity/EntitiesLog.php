@@ -14,6 +14,8 @@ use Cake\ORM\Entity;
  * @property int $user_id
  * @property \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $type
  * @property \Cake\I18n\DateTime $datetime
+ * @property string|null $ip
+ * @property string|null $user_agent
  *
  * @property \App\Model\Entity\User $user
  */
@@ -28,6 +30,8 @@ class EntitiesLog extends Entity
         'user_id' => true,
         'type' => true,
         'datetime' => true,
+        'ip' => true,
+        'user_agent' => true,
         'user' => true,
     ];
 }

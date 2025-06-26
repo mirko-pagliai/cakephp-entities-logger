@@ -83,6 +83,14 @@ class EntitiesLogsTable extends Table
             ->requirePresence('datetime', 'create')
             ->notEmptyDateTime('datetime');
 
+        $validator
+            ->ipv4('ip')
+            ->allowEmptyString('ip');
+
+        $validator
+            ->scalar('user_agent')
+            ->allowEmptyString('user_agent');
+
         return $validator;
     }
 
