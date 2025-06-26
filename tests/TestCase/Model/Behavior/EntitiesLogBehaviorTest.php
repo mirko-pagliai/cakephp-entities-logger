@@ -43,31 +43,24 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     #[Test]
-    public function testGetRequest(): void
+    public function testConstructRequestProperty(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getRequest(): ServerRequest
-            {
-                return parent::getRequest();
-            }
+            public ServerRequest $request;
         };
 
-        $this->assertSame(Router::getRequest(), $Behavior->getRequest());
+        $this->assertSame(Router::getRequest(), $Behavior->request);
     }
 
     #[Test]
-    public function testGetRequestNotInstanceOfServerRequest(): void
+    public function testConstructRequestPropertyNotInstanceOfServerRequest(): void
     {
         Router::reload();
 
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getRequest(): ServerRequest
-            {
-                return parent::getRequest();
-            }
-        };
-
         $this->expectExceptionMessage('Request is not an instance of Cake\Http\ServerRequest.');
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public ServerRequest $request;
+        };
         $Behavior->getRequest();
     }
 
