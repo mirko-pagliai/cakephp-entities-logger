@@ -6,7 +6,6 @@ namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 use App\Model\Entity\Article;
 use App\Model\Entity\User;
 use Cake\Datasource\EntityInterface;
-use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
@@ -86,26 +85,13 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     #[Test]
-    public function testGetIdentityIdWithNoIdentity(): void
-    {
-        Router::setRequest(new ServerRequest());
-
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): int
-            {
-                return parent::getIdentityId();
-            }
-        };
-
-        $this->expectExceptionMessage('Unable to retrieve identity. Request does not have an identity attribute.');
-        $Behavior->getIdentityId();
-    }
-
-    #[Test]
-    public function testGetIdentityIdWithNoIdProperty(): void
+    #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
+    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
+    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
+    public function testGetIdentityIdWithoutValidIdentity(string $expectedExceptionMessage, ?User $Identity): void
     {
         $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', new User());
+        $Request = $Request->withAttribute('identity', $Identity);
         Router::setRequest($Request);
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
@@ -115,8 +101,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $this->expectException(MissingPropertyException::class);
-        $this->expectExceptionMessage('`' . User::class . '::$id` is null, expected non-null value.');
+        $this->expectExceptionMessage($expectedExceptionMessage);
         $Behavior->getIdentityId();
     }
 
