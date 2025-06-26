@@ -51,6 +51,9 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Internal method to get the current server request instance.
      *
+     * The request is provided via a method, rather than a property set by the controller, so that it is only
+     *    necessary when it really is.
+     *
      * @return \Cake\Http\ServerRequest The current server request instance.
      * @throws \RuntimeException If the request is not an instance of Cake\Http\ServerRequest.
      */
