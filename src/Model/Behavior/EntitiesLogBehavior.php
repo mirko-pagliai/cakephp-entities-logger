@@ -31,8 +31,6 @@ class EntitiesLogBehavior extends Behavior
 
     public EntitiesLogsTable $EntitiesLogsTable;
 
-    protected ServerRequest $request;
-
     /**
      * Constructor method for initializing the object.
      *
@@ -48,12 +46,22 @@ class EntitiesLogBehavior extends Behavior
         parent::__construct($table, $config);
 
         $this->EntitiesLogsTable = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+    }
 
+    /**
+     * Internal method to get the current server request instance.
+     *
+     * @return \Cake\Http\ServerRequest The current server request instance.
+     * @throws \RuntimeException If the request is not an instance of Cake\Http\ServerRequest.
+     */
+    protected function getRequest(): ServerRequest
+    {
         $Request = Router::getRequest();
         if (!$Request instanceof ServerRequest) {
             throw new RuntimeException('Request is not an instance of Cake\Http\ServerRequest.');
         }
-        $this->request = $Request;
+
+        return $Request;
     }
 
     /**
@@ -66,7 +74,7 @@ class EntitiesLogBehavior extends Behavior
     protected function getIdentityId(): int
     {
         /** @var \Cake\Datasource\EntityInterface|null $Identity */
-        $Identity = $this->request->getAttribute('identity');
+        $Identity = $this->getRequest()->getAttribute('identity');
         if (!$Identity) {
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
@@ -98,8 +106,8 @@ class EntitiesLogBehavior extends Behavior
             'user_id' => $this->getIdentityId(),
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
-            'ip' => $this->request->clientIp(),
-            'user_agent' => $this->request->getHeaderLine('User-Agent'),
+            'ip' => $this->getRequest()->clientIp(),
+            'user_agent' => $this->getRequest()->getHeaderLine('User-Agent'),
         ]);
     }
 
