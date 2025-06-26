@@ -22,7 +22,9 @@ use RuntimeException;
  *
  * Inside your table's `initialize()` method:
  * ```
- * $this->addBehavior('Cake/EntitiesLogger.EntitiesLog');
+ * $this->addBehavior('Cake/EntitiesLogger.EntitiesLog', [
+ *    'checkRules' => true, // optional, default true
+ * ]);
  * ```
  */
 class EntitiesLogBehavior extends Behavior
@@ -30,6 +32,8 @@ class EntitiesLogBehavior extends Behavior
     use LocatorAwareTrait;
 
     public EntitiesLogsTable $EntitiesLogsTable;
+
+    private ?ServerRequest $request = null;
 
     /**
      * Constructor method for initializing the object.
@@ -59,12 +63,16 @@ class EntitiesLogBehavior extends Behavior
      */
     protected function getRequest(): ServerRequest
     {
-        $Request = Router::getRequest();
-        if (!$Request instanceof ServerRequest) {
+        if ($this->request !== null) {
+            return $this->request;
+        }
+
+        $request = Router::getRequest();
+        if (!$request instanceof ServerRequest) {
             throw new RuntimeException('Request is not an instance of Cake\Http\ServerRequest.');
         }
 
-        return $Request;
+        return $this->request = $request;
     }
 
     /**
@@ -123,9 +131,11 @@ class EntitiesLogBehavior extends Behavior
      */
     protected function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
     {
-        $entity = $this->buildEntity($entity, $entitiesLogType);
+        $EntitiesLog = $this->buildEntity($entity, $entitiesLogType);
 
-        return $this->EntitiesLogsTable->saveOrFail($entity, ['checkRules' => $this->getConfig('checkRules', true)]);
+        return $this->EntitiesLogsTable->saveOrFail($EntitiesLog, [
+            'checkRules' => (bool)$this->getConfig('checkRules', true),
+        ]);
     }
 
     /**
@@ -137,11 +147,9 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
-        $entitiesLogType = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
+        $type = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
 
-        $result = $this->saveEntitiesLog(entity: $entity, entitiesLogType: $entitiesLogType);
-
-        $event->setResult($result);
+        $event->setResult($this->saveEntitiesLog($entity, $type));
     }
 
     /**
@@ -153,10 +161,6 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        $entitiesLogType = EntitiesLogType::Deleted;
-
-        $result = $this->saveEntitiesLog(entity: $entity, entitiesLogType: $entitiesLogType);
-
-        $event->setResult($result);
+        $event->setResult($this->saveEntitiesLog($entity, EntitiesLogType::Deleted));
     }
 }
