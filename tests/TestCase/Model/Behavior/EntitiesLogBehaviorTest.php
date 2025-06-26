@@ -43,6 +43,35 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     #[Test]
+    public function testGetRequest(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function getRequest(): ServerRequest
+            {
+                return parent::getRequest();
+            }
+        };
+
+        $this->assertSame(Router::getRequest(), $Behavior->getRequest());
+    }
+
+    #[Test]
+    public function testGetRequestNotInstanceOfServerRequest(): void
+    {
+        Router::reload();
+
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function getRequest(): ServerRequest
+            {
+                return parent::getRequest();
+            }
+        };
+
+        $this->expectExceptionMessage('Request is not an instance of Cake\Http\ServerRequest.');
+        $Behavior->getRequest();
+    }
+
+    #[Test]
     public function testGetIdentityId(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
@@ -54,22 +83,6 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $result = $Behavior->getIdentityId();
         $this->assertSame(1, $result);
-    }
-
-    #[Test]
-    public function testGetIdentityIdWithNoRequest(): void
-    {
-        Router::reload();
-
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): int
-            {
-                return parent::getIdentityId();
-            }
-        };
-
-        $this->expectExceptionMessage('Unable to retrieve identity. Request is not an instance of Cake\Http\ServerRequest.');
-        $Behavior->getIdentityId();
     }
 
     #[Test]
@@ -116,6 +129,8 @@ class EntitiesLogBehaviorTest extends TestCase
             'user_id',
             'type',
             'datetime',
+            'ip',
+            'user_agent',
         ];
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {

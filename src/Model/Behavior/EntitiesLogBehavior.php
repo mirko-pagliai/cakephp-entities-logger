@@ -42,22 +42,32 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Internal method to retrieve the identity ID from the current request.
+     * Internal method to get the current server request instance.
      *
-     * @return int The ID of the current identity.
-     * @throws \RuntimeException If the request does not have an identity attribute.
-     * @throws \Cake\Datasource\Exception\MissingPropertyException If the identity attribute does not have an `id` property.
-     * @throws \RuntimeException If the request is not an instance of \Cake\Http\ServerRequest.
+     * @return \Cake\Http\ServerRequest The current server request instance.
+     * @throws \RuntimeException If the request is not an instance of Cake\Http\ServerRequest.
      */
-    protected function getIdentityId(): int
+    protected function getRequest(): ServerRequest
     {
         $Request = Router::getRequest();
         if (!$Request instanceof ServerRequest) {
-            throw new RuntimeException('Unable to retrieve identity. Request is not an instance of Cake\Http\ServerRequest.');
+            throw new RuntimeException('Request is not an instance of Cake\Http\ServerRequest.');
         }
 
+        return $Request;
+    }
+
+    /**
+     * Internal method to get the ID of the identity entity associated with the current request.
+     *
+     * @return int The identity ID.
+     * @throws \RuntimeException If the identity attribute is not present in the request.
+     * @throws \Cake\Core\Exception\MissingPropertyException If the identity entity does not have a valid ID property.
+     */
+    protected function getIdentityId(): int
+    {
         /** @var \Cake\Datasource\EntityInterface|null $Identity */
-        $Identity = $Request->getAttribute('identity');
+        $Identity = $this->getRequest()->getAttribute('identity');
         if (!$Identity) {
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
@@ -89,6 +99,8 @@ class EntitiesLogBehavior extends Behavior
             'user_id' => $this->getIdentityId(),
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
+            'ip' => $this->getRequest()->clientIp(),
+            'user_agent' => $this->getRequest()->getHeaderLine('User-Agent'),
         ]);
     }
 
