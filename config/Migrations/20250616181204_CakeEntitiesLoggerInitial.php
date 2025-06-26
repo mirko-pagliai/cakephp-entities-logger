@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Migrations\BaseMigration;
 
-class Initial extends BaseMigration
+class CakeEntitiesLoggerInitial extends BaseMigration
 {
     /**
      * Up Method.
