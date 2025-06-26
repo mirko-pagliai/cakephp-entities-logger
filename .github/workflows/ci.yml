@@ -52,6 +52,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: mirko-pagliai/cakephp-entities-logger
 
   testsuite-windows:
     runs-on: windows-2022
