@@ -87,6 +87,10 @@ class EntitiesLogsTable extends Table
             ->ipv4('ip')
             ->allowEmptyString('ip');
 
+        $validator
+            ->scalar('user_agent')
+            ->allowEmptyString('user_agent');
+
         return $validator;
     }
 
