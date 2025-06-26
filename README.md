@@ -43,12 +43,14 @@ bin/cake migrations status -p Cake/EntitiesLogger
 Alternatively (not recommended) you can run the `sql` code directly:
 ```sql
 CREATE TABLE IF NOT EXISTS `entities_logs` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `entity_class` varchar(255) NOT NULL,
-  `entity_id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `type` varchar(100) NOT NULL,
-  `datetime` datetime NOT NULL,
+      `id` int(11) NOT NULL,
+      `entity_class` varchar(255) NOT NULL,
+      `entity_id` int(11) NOT NULL,
+      `user_id` int(11) NOT NULL,
+      `type` varchar(100) NOT NULL,
+      `datetime` datetime NOT NULL,
+      `ip` varchar(15) DEFAULT NULL,
+      `user_agent` text DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 ```
