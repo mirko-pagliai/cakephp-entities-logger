@@ -24,6 +24,11 @@ The best way is using migrations:
 bin/cake migrations migrate -p Cake/EntitiesLogger
 ```
 
+Instead, if you want to verify that the plugin migrations have been applied correctly:
+```bash
+bin/cake migrations status -p Cake/EntitiesLogger
+```
+
 Alternatively (not recommended) you can run the `sql` code directly:
 ```sql
 CREATE TABLE IF NOT EXISTS `entities_logs` (
