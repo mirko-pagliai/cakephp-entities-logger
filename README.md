@@ -1,5 +1,7 @@
 # cakephp-entities-logger
 
+[![CI](https://github.com/mirko-pagliai/cakephp-entities-logger/actions/workflows/ci.yml/badge.svg)](https://github.com/mirko-pagliai/cakephp-entities-logger/actions/workflows/ci.yml)
+
 ![screenshot_phpmyadmin.png](docs/screenshot_phpmyadmin.png)
 
 From this screenshot of the table we can see that:
