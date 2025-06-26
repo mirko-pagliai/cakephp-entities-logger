@@ -49,7 +49,9 @@ class EntitiesLogBehavior extends Behavior
     {
         parent::__construct($table, $config);
 
-        $this->EntitiesLogsTable = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable $EntitiesLogsTable */
+        $EntitiesLogsTable = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        $this->EntitiesLogsTable = $EntitiesLogsTable;
     }
 
     /**
