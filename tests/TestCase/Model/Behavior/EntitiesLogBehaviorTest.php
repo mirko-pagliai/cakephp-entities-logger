@@ -12,6 +12,7 @@ use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
+use Cake\ORM\Association\HasMany;
 use Cake\ORM\Entity;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
@@ -39,6 +40,22 @@ class EntitiesLogBehaviorTest extends TestCase
         $Request = new ServerRequest();
         $Request = $Request->withAttribute('identity', $Identity);
         Router::setRequest($Request);
+    }
+
+    #[Test]
+    public function testConstructForHasManyAssociation(): void
+    {
+        $Table = new Table();
+
+        $this->assertFalse($Table->hasAssociation('EntitiesLogs'));
+
+        new EntitiesLogBehavior($Table);
+
+        $this->assertTrue($Table->hasAssociation('EntitiesLogs'));
+
+        $result = $Table->getAssociation('EntitiesLogs');
+        $this->assertInstanceOf(HasMany::class, $result);
+        $this->assertInstanceOf(EntitiesLogsTable::class, $result->getTarget());
     }
 
     #[Test]
