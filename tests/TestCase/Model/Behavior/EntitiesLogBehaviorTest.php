@@ -46,6 +46,7 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testConstructForHasManyAssociation(): void
     {
         $Table = new Table();
+        $Table->setEntityClass(Article::class);
 
         $this->assertFalse($Table->hasAssociation('EntitiesLogs'));
 
@@ -53,9 +54,11 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $this->assertTrue($Table->hasAssociation('EntitiesLogs'));
 
-        $result = $Table->getAssociation('EntitiesLogs');
-        $this->assertInstanceOf(HasMany::class, $result);
-        $this->assertInstanceOf(EntitiesLogsTable::class, $result->getTarget());
+        $association = $Table->getAssociation('EntitiesLogs');
+        $this->assertInstanceOf(HasMany::class, $association);
+        $this->assertInstanceOf(EntitiesLogsTable::class, $association->getTarget());
+        $this->assertSame(['entity_class' => Article::class], $association->getConditions());
+        $this->assertSame(['EntitiesLogs.datetime' => 'ASC'], $association->getSort());
     }
 
     #[Test]

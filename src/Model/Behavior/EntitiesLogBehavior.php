@@ -61,6 +61,7 @@ class EntitiesLogBehavior extends Behavior
             'targetTable' => $EntitiesLogsTable,
             'foreignKey' => 'entity_id',
             'conditions' => ['entity_class' => $table->getEntityClass()],
+            'sort' => ['EntitiesLogs.datetime' => 'ASC'],
         ]);
 
         $this->EntitiesLogsTable = $EntitiesLogsTable;
