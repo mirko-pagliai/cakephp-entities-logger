@@ -4,11 +4,13 @@ declare(strict_types=1);
 use Cake\Cache\Cache;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
+use Cake\TestSuite\Fixture\SchemaLoader;
 use Migrations\TestSuite\Migrator;
 
 define('ROOT', dirname(__DIR__) . DS);
 const CORE_PATH = ROOT . 'vendor' . DS . 'cakephp' . DS . 'cakephp' . DS;
 const APP_DIR = 'test_app' . DS;
+const TESTS = ROOT . DS . 'tests' . DS;
 define('TMP', sys_get_temp_dir() . DS . 'cakephp-entities-logger' . DS);
 
 // phpcs:disable
@@ -41,4 +43,4 @@ Cache::setConfig([
 ConnectionManager::setConfig('test', ['url' => 'sqlite:///' . TMP . 'test.sq3']);
 
 $migrator = new Migrator();
-$migrator->run();
+$migrator->run(['skip' => ['users']]);

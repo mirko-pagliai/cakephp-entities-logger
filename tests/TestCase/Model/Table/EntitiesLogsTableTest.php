@@ -8,6 +8,7 @@ use Cake\Database\Type\EnumType;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\EntitiesLogger\Test\Fixture\EntitiesLogsFixture;
+use Cake\EntitiesLogger\Test\Fixture\UsersFixture;
 use Cake\ORM\Association\BelongsTo;
 use Cake\TestSuite\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -26,6 +27,7 @@ class EntitiesLogsTableTest extends TestCase
      */
     protected array $fixtures = [
         EntitiesLogsFixture::class,
+        UsersFixture::class,
     ];
 
     /**
@@ -35,7 +37,7 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->EntitiesLogs ??= $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        $this->EntitiesLogs = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
     }
 
     #[Test]
@@ -117,6 +119,32 @@ class EntitiesLogsTableTest extends TestCase
     #[Test]
     public function testBuildRules(): void
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $EntitiesLog = $this->EntitiesLogs->newEntity([
+            'entity_class' => 'App\Model\Entity\Article',
+            'entity_id' => 1,
+            'user_id' => 1,
+            'type' => EntitiesLogType::Created,
+            'datetime' => '2025-06-16 20:22:06',
+        ]);
+        $this->assertTrue($this->EntitiesLogs->checkRules($EntitiesLog));
+    }
+
+    #[Test]
+    public function testBuildRulesWithErrors(): void
+    {
+        $expected = [
+            'user_id' => [
+                '_existsIn' => 'This value does not exist',
+            ],
+        ];
+        $EntitiesLog = $this->EntitiesLogs->newEntity([
+            'entity_class' => 'App\Model\Entity\Article',
+            'entity_id' => 1,
+            'user_id' => 11,
+            'type' => EntitiesLogType::Created,
+            'datetime' => '2025-06-16 20:22:06',
+        ]);
+        $this->assertFalse($this->EntitiesLogs->checkRules($EntitiesLog));
+        $this->assertSame($expected, $EntitiesLog->getErrors());
     }
 }
