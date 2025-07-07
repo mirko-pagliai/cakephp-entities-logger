@@ -5,7 +5,6 @@
 [![codecov](https://codecov.io/gh/mirko-pagliai/cakephp-entities-logger/graph/badge.svg?token=9yi4NCAADl)](https://codecov.io/gh/mirko-pagliai/cakephp-entities-logger)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/79152e0bd07a47c58daecd04aa6bc225)](https://app.codacy.com/gh/mirko-pagliai/cakephp-entities-logger/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![CodeFactor](https://www.codefactor.io/repository/github/mirko-pagliai/cakephp-entities-logger/badge)](https://www.codefactor.io/repository/github/mirko-pagliai/cakephp-entities-logger)
-[![CodeFactor](https://www.codefactor.io/repository/github/mirko-pagliai/cakephp-essentials/badge)](https://www.codefactor.io/repository/github/mirko-pagliai/cakephp-essentials)
 
 ![screenshot_phpmyadmin.png](docs/screenshot_phpmyadmin.png)
 
