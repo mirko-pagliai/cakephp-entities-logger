@@ -42,5 +42,9 @@ Cache::setConfig([
 
 ConnectionManager::setConfig('test', ['url' => 'sqlite:///' . TMP . 'test.sq3']);
 
+$loader = new SchemaLoader();
+/** @link tests/schema.php */
+$loader->loadInternalFile(TESTS . 'schema.php');
+
 $migrator = new Migrator();
 $migrator->run(['skip' => ['users']]);
