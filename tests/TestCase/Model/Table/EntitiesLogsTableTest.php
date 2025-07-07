@@ -67,7 +67,51 @@ class EntitiesLogsTableTest extends TestCase
     #[Test]
     public function testValidationDefault(): void
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $EntitiesLog = $this->EntitiesLogs->newEntity([
+            'entity_class' => 'App\Model\Entity\Article',
+            'entity_id' => 1,
+            'user_id' => 1,
+            'type' => EntitiesLogType::Created,
+            'datetime' => '2025-06-16 20:22:06',
+            'ip' => '192.168.1.100',
+            'user_agent' => '',
+        ]);
+        $this->assertEmpty($EntitiesLog->getErrors());
+    }
+
+    #[Test]
+    public function testValidationDefaultWithErrors(): void
+    {
+        $expected = [
+            'entity_class' => [
+                'maxLength' => 'The provided value must be at most `255` characters long',
+            ],
+            'entity_id' => [
+                'integer' => 'The provided value must be an integer',
+            ],
+            'user_id' => [
+                'integer' => 'The provided value must be an integer',
+            ],
+            'type' => [
+                'enum' => 'The provided value must be one of `created`, `updated`, `deleted`',
+            ],
+            'datetime' => [
+                'dateTime' => 'The provided value must be a date and time of one of these formats: `ymd`',
+            ],
+            'ip' => [
+                'ipv4' => 'The provided value must be an IPv4 address',
+            ],
+        ];
+        $EntitiesLog = $this->EntitiesLogs->newEntity([
+            'entity_class' => str_repeat('a', 256),
+            'entity_id' => 'notInteger',
+            'user_id' => 'notInteger',
+            'type' => 'notValidType',
+            'datetime' => '2025-06-16',
+            'ip' => 'notIpv4Address',
+            'user_agent' => '',
+        ]);
+        $this->assertSame($expected, $EntitiesLog->getErrors());
     }
 
     #[Test]
