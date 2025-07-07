@@ -42,12 +42,26 @@ class EntitiesLogsTableTest extends TestCase
     public function testInitialize(): void
     {
         $expectedEntitiesLogType = EnumType::from(EntitiesLogType::class);
-
         $this->assertSame($expectedEntitiesLogType, $this->EntitiesLogs->getSchema()->getColumnType('type'));
 
         $UsersBelongsTo = $this->EntitiesLogs->getAssociation('Users');
         $this->assertInstanceOf(BelongsTo::class, $UsersBelongsTo);
         $this->assertInstanceOf(UsersTable::class, $UsersBelongsTo->getTarget());
+    }
+
+    #[Test]
+    public function testInitializeAlreadyHasUsersAssociation(): void
+    {
+        $AnotherUsersTable = new class extends UsersTable {
+        };
+
+        //Removes the default `Users` association and sets a new one
+        $this->EntitiesLogs->associations()->remove('Users');
+        $this->EntitiesLogs->belongsTo('Users', ['targetTable' => $AnotherUsersTable]);
+
+        //By re-initializing the table, the `Users` association remains the one already set
+        $this->EntitiesLogs->initialize([]);
+        $this->assertSame($AnotherUsersTable, $this->EntitiesLogs->Users->getTarget());
     }
 
     #[Test]

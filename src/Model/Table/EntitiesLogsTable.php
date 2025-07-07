@@ -43,11 +43,13 @@ class EntitiesLogsTable extends Table
 
         $this->getSchema()->setColumnType('type', EnumType::from(EntitiesLogType::class));
 
-        $this->belongsTo('Users', [
-            'foreignKey' => 'user_id',
-            'joinType' => 'INNER',
-            'className' => 'Users',
-        ]);
+        if (!$this->hasAssociation('Users')) {
+            $this->belongsTo('Users', [
+                'foreignKey' => 'user_id',
+                'joinType' => 'INNER',
+                'className' => 'Users',
+            ]);
+        }
     }
 
     /**
