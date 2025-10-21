@@ -49,8 +49,9 @@ class EntitiesLogBehavior extends Behavior
     {
         parent::__construct($table, $config);
 
-        /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable $EntitiesLogsTable */
-        $EntitiesLogsTable = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        if (empty($this->EntitiesLogsTable)) {
+            $this->EntitiesLogsTable = $this->fetchTable(EntitiesLogsTable::class);
+        }
 
         /**
          * Automatically sets a "has many" association to the table that loaded the behavior.
@@ -58,13 +59,11 @@ class EntitiesLogBehavior extends Behavior
          * @phpstan-ignore cake.addAssociation.existClass
          */
         $table->hasMany('EntitiesLogs', [
-            'targetTable' => $EntitiesLogsTable,
+            'targetTable' => $this->EntitiesLogsTable,
             'foreignKey' => 'entity_id',
             'conditions' => ['entity_class' => $table->getEntityClass()],
             'sort' => ['EntitiesLogs.datetime' => 'ASC'],
         ]);
-
-        $this->EntitiesLogsTable = $EntitiesLogsTable;
     }
 
     /**
