@@ -31,7 +31,7 @@ class EntitiesLogBehavior extends Behavior
 {
     use LocatorAwareTrait;
 
-    public EntitiesLogsTable $EntitiesLogsTable;
+    public EntitiesLogsTable|Table $EntitiesLogsTable;
 
     private ?ServerRequest $request = null;
 
@@ -126,7 +126,8 @@ class EntitiesLogBehavior extends Behavior
             throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
         }
 
-        return $this->EntitiesLogsTable->newEntity([
+        /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog $EntitiesLog */
+        $EntitiesLog = $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
             'entity_id' => $entity->id,
             'user_id' => $this->getIdentityId(),
@@ -135,6 +136,8 @@ class EntitiesLogBehavior extends Behavior
             'ip' => $this->getRequest()->clientIp(),
             'user_agent' => $this->getRequest()->getHeaderLine('User-Agent'),
         ]);
+
+        return $EntitiesLog;
     }
 
     /**

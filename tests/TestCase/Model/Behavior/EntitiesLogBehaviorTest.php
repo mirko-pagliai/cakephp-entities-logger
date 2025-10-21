@@ -35,32 +35,73 @@ class EntitiesLogBehaviorTest extends TestCase
     {
         parent::setUp();
 
-        $Identity = new User(['id' => 1]);
-
         $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', $Identity);
+        $Request = $Request->withAttribute('identity', new User(['id' => 1]));
         Router::setRequest($Request);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
     #[Test]
-    public function testConstructForHasManyAssociation(): void
+    public function testConstruct(): void
     {
         $Table = new Table();
         $Table->setEntityClass(Article::class);
 
-        $this->assertFalse($Table->hasAssociation('EntitiesLogs'));
+        $Behavior = new EntitiesLogBehavior($Table);
+        $this->assertSame(EntitiesLogsTable::class, $Behavior->EntitiesLogsTable->getRegistryAlias());
+
+        $Association = $Table->getAssociation('EntitiesLogs');
+        $this->assertInstanceOf(HasMany::class, $Association);
+        $this->assertInstanceOf(EntitiesLogsTable::class, $Association->getTarget());
+        $this->assertSame(['entity_class' => Article::class], $Association->getConditions());
+        $this->assertSame(['EntitiesLogs.datetime' => 'ASC'], $Association->getSort());
+    }
+
+    /**
+     * Tests for `__construct` when the table already has the `EntitiesLogs` association.
+     *
+     * Unlike the previous test, in this case the table instance to which the behavior is attached already has the
+     * `EntitiesLogs` association, so this is not modified.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
+    #[Test]
+    public function testConstructTableAlreadyHasTheAssociation(): void
+    {
+        $NewAssociatedTable = new Table();
+
+        $Table = new Table();
+        /** @phpstan-ignore cake.addAssociation.existClass */
+        $Table->hasMany('EntitiesLogs', ['targetTable' => $NewAssociatedTable]);
 
         new EntitiesLogBehavior($Table);
 
-        $this->assertTrue($Table->hasAssociation('EntitiesLogs'));
-
-        $association = $Table->getAssociation('EntitiesLogs');
-        $this->assertInstanceOf(HasMany::class, $association);
-        $this->assertInstanceOf(EntitiesLogsTable::class, $association->getTarget());
-        $this->assertSame(['entity_class' => Article::class], $association->getConditions());
-        $this->assertSame(['EntitiesLogs.datetime' => 'ASC'], $association->getSort());
+        $this->assertSame($NewAssociatedTable, $Table->getAssociation('EntitiesLogs')->getTarget());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
+    #[Test]
+    public function testConstructBehaviorAlreadyHasTheEntitiesLogsTableProperty(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                $this->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
+
+                parent::__construct($table, $config);
+            }
+        };
+
+        $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
+    }
+
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getRequest()
+     */
     #[Test]
     public function testGetRequest(): void
     {
@@ -74,6 +115,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame(Router::getRequest(), $Behavior->getRequest());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getRequest()
+     */
     #[Test]
     public function testGetRequestNotInstanceOfServerRequest(): void
     {
@@ -90,6 +134,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->getRequest();
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
+     */
     #[Test]
     public function testGetIdentityId(): void
     {
@@ -104,6 +151,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame(1, $result);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
+     */
     #[Test]
     #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
@@ -125,6 +175,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->getIdentityId();
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
     #[Test]
     public function testBuildEntity(): void
     {
@@ -161,6 +214,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertLessThanOrEqual(1, $result->datetime->diffInSeconds());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
     #[Test]
     public function testBuildEntityWithNoEntityId(): void
     {
@@ -175,6 +231,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
     #[Test]
     public function testSaveEntitiesLog(): void
     {
@@ -201,6 +260,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
     #[Test]
     #[TestWith([EntitiesLogType::Created, true])]
     #[TestWith([EntitiesLogType::Updated, false])]
@@ -226,6 +288,9 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::afterDelete()
+     */
     #[Test]
     public function testAfterDelete(): void
     {
