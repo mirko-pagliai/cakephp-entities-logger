@@ -31,7 +31,7 @@ class EntitiesLogBehavior extends Behavior
 {
     use LocatorAwareTrait;
 
-    public EntitiesLogsTable $EntitiesLogsTable;
+    public EntitiesLogsTable|Table $EntitiesLogsTable;
 
     private ?ServerRequest $request = null;
 
@@ -49,22 +49,22 @@ class EntitiesLogBehavior extends Behavior
     {
         parent::__construct($table, $config);
 
-        /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable $EntitiesLogsTable */
-        $EntitiesLogsTable = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        if (empty($this->EntitiesLogsTable)) {
+            $this->EntitiesLogsTable = $this->fetchTable(EntitiesLogsTable::class);
+        }
 
         /**
          * Automatically sets a "has many" association to the table that loaded the behavior.
-         *
-         * @phpstan-ignore cake.addAssociation.existClass
          */
-        $table->hasMany('EntitiesLogs', [
-            'targetTable' => $EntitiesLogsTable,
-            'foreignKey' => 'entity_id',
-            'conditions' => ['entity_class' => $table->getEntityClass()],
-            'sort' => ['EntitiesLogs.datetime' => 'ASC'],
-        ]);
-
-        $this->EntitiesLogsTable = $EntitiesLogsTable;
+        if (!$table->hasAssociation('EntitiesLogs')) {
+            /** @phpstan-ignore cake.addAssociation.existClass */
+            $table->hasMany('EntitiesLogs', [
+                'targetTable' => $this->EntitiesLogsTable,
+                'foreignKey' => 'entity_id',
+                'conditions' => ['entity_class' => $table->getEntityClass()],
+                'sort' => ['EntitiesLogs.datetime' => 'ASC'],
+            ]);
+        }
     }
 
     /**
@@ -126,7 +126,8 @@ class EntitiesLogBehavior extends Behavior
             throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
         }
 
-        return $this->EntitiesLogsTable->newEntity([
+        /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog $EntitiesLog */
+        $EntitiesLog = $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
             'entity_id' => $entity->id,
             'user_id' => $this->getIdentityId(),
@@ -135,6 +136,8 @@ class EntitiesLogBehavior extends Behavior
             'ip' => $this->getRequest()->clientIp(),
             'user_agent' => $this->getRequest()->getHeaderLine('User-Agent'),
         ]);
+
+        return $EntitiesLog;
     }
 
     /**
