@@ -36,14 +36,7 @@ class EntitiesLogBehavior extends Behavior
     private ?ServerRequest $request = null;
 
     /**
-     * Constructor method for initializing the object.
-     *
-     * @param \Cake\ORM\Table $table The table instance the behavior is attached to.
-     * @param array $config Optional configuration for the behavior. You can specify options such as 'checkRules'
-     *   (boolean, default true) to enable or disable validation rules checking when a log is saved.
-     *   Other options defined by the base CakePHP Behavior class are also accepted.
-     * @return void
-     * @throws \RuntimeException If the request is not an instance of \Cake\Http\ServerRequest.
+     * @inheritDoc
      */
     public function __construct(Table $table, array $config = [])
     {
