@@ -30,10 +30,8 @@ Configure::write('App', [
     'fullBaseUrl' => 'http://localhost',
 ]);
 
-/** @todo to be removed with CakePHP >= 5.1 */
-$translationsName = version_compare(Configure::version(), '5.1', '>=') ? '_cake_translations_' : '_cake_core_';
 Cache::setConfig([
-    $translationsName => [
+    '_cake_translations_' => [
         'engine' => 'File',
         'prefix' => 'cake_core_',
         'serialize' => true,

@@ -23,7 +23,7 @@ class EntitiesLogsTableTest extends TestCase
     protected EntitiesLogsTable $EntitiesLogs;
 
     /**
-     * @var array<string>
+     * @var list<string>
      */
     protected array $fixtures = [
         EntitiesLogsFixture::class,
@@ -37,7 +37,7 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->EntitiesLogs = $this->fetchTable('Cake/EntitiesLogger.EntitiesLogs');
+        $this->EntitiesLogs ??= $this->fetchTable(EntitiesLogsTable::class);
     }
 
     #[Test]
