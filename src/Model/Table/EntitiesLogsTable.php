@@ -86,7 +86,7 @@ class EntitiesLogsTable extends Table
             ->notEmptyDateTime('datetime');
 
         $validator
-            ->ipv4('ip')
+            ->ip('ip')
             ->allowEmptyString('ip');
 
         $validator

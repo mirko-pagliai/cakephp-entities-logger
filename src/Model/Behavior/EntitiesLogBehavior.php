@@ -77,7 +77,7 @@ class EntitiesLogBehavior extends Behavior
 
         $request = Router::getRequest();
         if (!$request instanceof ServerRequest) {
-            throw new RuntimeException('Request is not an instance of Cake\Http\ServerRequest.');
+            throw new RuntimeException('Request is not an instance of `' . ServerRequest::class . '`.');
         }
 
         return $this->request = $request;
