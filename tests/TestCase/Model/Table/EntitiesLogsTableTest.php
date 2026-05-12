@@ -13,6 +13,7 @@ use Cake\ORM\Association\BelongsTo;
 use Cake\TestSuite\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 
 /**
  * EntitiesLogsTable.
@@ -66,8 +67,13 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertSame($AnotherUsersTable, $this->EntitiesLogs->Users->getTarget());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::validationDefault()
+     */
     #[Test]
-    public function testValidationDefault(): void
+    #[TestWith(['192.168.1.100'])]
+    #[TestWith(['2001:0db8:85a3:0000:0000:8a2e:0370:7334'])]
+    public function testValidationDefault(string $ipAddress): void
     {
         $EntitiesLog = $this->EntitiesLogs->newEntity([
             'entity_class' => 'App\Model\Entity\Article',
@@ -75,10 +81,12 @@ class EntitiesLogsTableTest extends TestCase
             'user_id' => 1,
             'type' => EntitiesLogType::Created,
             'datetime' => '2025-06-16 20:22:06',
-            'ip' => '192.168.1.100',
+            'ip' => $ipAddress,
             'user_agent' => '',
         ]);
+
         $this->assertEmpty($EntitiesLog->getErrors());
+        $this->assertSame($ipAddress, $EntitiesLog->ip);
     }
 
     #[Test]
