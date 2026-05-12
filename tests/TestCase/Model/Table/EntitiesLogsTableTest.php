@@ -38,9 +38,12 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->EntitiesLogs ??= $this->fetchTable(EntitiesLogsTable::class);
+        $this->EntitiesLogs = $this->fetchTable(EntitiesLogsTable::class);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
     #[Test]
     public function testInitialize(): void
     {
@@ -52,6 +55,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertInstanceOf(UsersTable::class, $UsersBelongsTo->getTarget());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
     #[Test]
     public function testInitializeAlreadyHasUsersAssociation(): void
     {
@@ -89,6 +95,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertSame($ipAddress, $EntitiesLog->ip);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::validationDefault()
+     */
     #[Test]
     public function testValidationDefaultWithErrors(): void
     {
@@ -109,7 +118,7 @@ class EntitiesLogsTableTest extends TestCase
                 'dateTime' => 'The provided value must be a date and time of one of these formats: `ymd`',
             ],
             'ip' => [
-                'ipv4' => 'The provided value must be an IPv4 address',
+                'ip' => 'The provided value must be an IP address',
             ],
         ];
         $EntitiesLog = $this->EntitiesLogs->newEntity([
@@ -124,6 +133,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertSame($expected, $EntitiesLog->getErrors());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::buildRules()
+     */
     #[Test]
     public function testBuildRules(): void
     {
@@ -137,6 +149,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertTrue($this->EntitiesLogs->checkRules($EntitiesLog));
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::buildRules()
+     */
     #[Test]
     public function testBuildRulesWithErrors(): void
     {
