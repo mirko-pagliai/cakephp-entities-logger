@@ -18,7 +18,6 @@ class EntitiesLogsFixture extends TestFixture
     {
         $this->records = [
             [
-                'id' => 1,
                 'entity_class' => 'App\Model\Entity\Article',
                 'entity_id' => 1,
                 'user_id' => 1,
