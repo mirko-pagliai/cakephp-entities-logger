@@ -9,14 +9,14 @@ class ModifiedIpField39CharsForEntitiesLogsTable extends BaseMigration
     public function up(): void
     {
         $this->table('entities_logs')
-            ->changeColumn('ip', 'string', ['limit' => 39])
+            ->updateColumn('ip', 'string', ['limit' => 39])
             ->update();
     }
 
     public function down(): void
     {
         $this->table('entities_logs')
-            ->changeColumn('ip', 'string', ['limit' => 15])
+            ->updateColumn('ip', 'string', ['limit' => 15])
             ->update();
     }
 }
