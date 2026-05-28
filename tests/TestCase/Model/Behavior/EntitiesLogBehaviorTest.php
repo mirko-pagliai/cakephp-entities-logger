@@ -87,16 +87,8 @@ class EntitiesLogBehaviorTest extends TestCase
     #[Test]
     public function testConstructBehaviorAlreadyHasTheEntitiesLogsTableProperty(): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public ?ServerRequest $request;
-
-            public function __construct(Table $table, array $config = [])
-            {
-                $this->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
-
-                parent::__construct($table, $config);
-            }
-        };
+        $Behavior = new EntitiesLogBehavior(new Table());
+        $Behavior->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
 
         $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
         $this->assertSame(Router::getRequest(), $Behavior->request);
@@ -128,18 +120,12 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testGetIdentityIdWithNullRequest(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function __construct(Table $table, array $config = [])
-            {
-                parent::__construct($table, $config);
-
-                $this->request = null;
-            }
-
             public function getIdentityId(): ?int
             {
                 return parent::getIdentityId();
             }
         };
+        $Behavior->request = null;
 
         $result = $Behavior->getIdentityId();
         $this->assertNull($result);
@@ -220,18 +206,12 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testBuildEntityWithNullRequest(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function __construct(Table $table, array $config = [])
-            {
-                parent::__construct($table, $config);
-
-                $this->request = null;
-            }
-
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
+        $Behavior->request = null;
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
         $this->assertNull($result);
@@ -296,18 +276,12 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testSaveEntitiesLogWithNullRequest(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function __construct(Table $table, array $config = [])
-            {
-                parent::__construct($table, $config);
-
-                $this->request = null;
-            }
-
             public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
         };
+        $Behavior->request = null;
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
         $this->assertNull($result);
@@ -351,14 +325,8 @@ class EntitiesLogBehaviorTest extends TestCase
     {
         $Table = new Table();
 
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function __construct(Table $table, array $config = [])
-            {
-                parent::__construct($table, $config);
-
-                $this->request = null;
-            }
-        };
+        $Behavior = new EntitiesLogBehavior($Table);
+        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterSave', [new Article(['id' => 3])]);
@@ -400,14 +368,8 @@ class EntitiesLogBehaviorTest extends TestCase
     {
         $Table = new Table();
 
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function __construct(Table $table, array $config = [])
-            {
-                parent::__construct($table, $config);
-
-                $this->request = null;
-            }
-        };
+        $Behavior = new EntitiesLogBehavior($Table);
+        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterDelete', [new Article(['id' => 3])]);

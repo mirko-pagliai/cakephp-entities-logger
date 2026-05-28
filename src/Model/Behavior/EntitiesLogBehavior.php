@@ -33,7 +33,7 @@ class EntitiesLogBehavior extends Behavior
 
     public EntitiesLogsTable|Table $EntitiesLogsTable;
 
-    protected ?ServerRequest $request = null;
+    public ?ServerRequest $request = null;
 
     /**
      * @inheritDoc
