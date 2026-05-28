@@ -63,55 +63,46 @@ class EntitiesLogBehavior extends Behavior
     }
 
     /**
-     * Internal method to retrieve the identity ID from the current request's identity attribute.
+     * Internal method to build a new `EntitiesLog` entity based on the provided entity and log type.
      *
-     * @return int|null The identity ID if available, or `null` if the request is not set.
-     * @throws \Cake\Datasource\Exception\MissingPropertyException If the identity object does not have a valid ID.
-     * @throws \RuntimeException If the identity attribute is not present in the request.
+     * @param \Cake\Datasource\EntityInterface $entity The entity instance to create a log for.
+     * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The log type associated with the entity.
+     * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null Returns an `EntitiesLog` entity or `null` if the
+     * request is unavailable.
+     * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity or identity is missing required properties.
+     * @throws \RuntimeException If the request does not contain an identity attribute.
      */
-    protected function getIdentityId(): ?int
+    protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
     {
+        // Checks for the entity's id
+        if (!isset($entity->id)) {
+            throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
+        }
+
         if (!$this->request) {
             return null;
         }
 
-        /** @var \Cake\Datasource\EntityInterface|null $Identity */
+        /**
+         * Checks for the identity attribute.
+         *
+         * @var \Cake\Datasource\EntityInterface|null $Identity
+         */
         $Identity = $this->request->getAttribute('identity');
         if (!$Identity) {
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
 
+        // Checks for the identity's id
         if (!isset($Identity->id)) {
             throw new MissingPropertyException('`' . $Identity::class . '::$id` is null, expected non-null value.');
-        }
-
-        return $Identity->id;
-    }
-
-    /**
-     * Internal method to build a new `EntitiesLog` instance based on the provided entity and log type.
-     *
-     * @param \Cake\Datasource\EntityInterface $entity The entity instance to log.
-     * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log to be created.
-     * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null The created EntitiesLog instance or `null` if no
-     * request is available.
-     * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity's id is `null`.
-     */
-    protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
-    {
-        if (!$this->request) {
-            return null;
-        }
-
-        if (!isset($entity->id)) {
-            throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
         }
 
         /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog $EntitiesLog */
         $EntitiesLog = $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
             'entity_id' => $entity->id,
-            'user_id' => $this->getIdentityId(),
+            'user_id' => $Identity->id,
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
             'ip' => $this->request->clientIp(),

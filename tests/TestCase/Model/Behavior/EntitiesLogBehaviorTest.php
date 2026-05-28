@@ -37,7 +37,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $Request = new ServerRequest();
         $Request = $Request
-            ->withAttribute('identity', new User(['id' => 1]))
+            ->withAttribute('identity', new User(['id' => 5]))
             ->withHeader('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36')
             ->withEnv('REMOTE_ADDR', '127.0.0.1');
 
@@ -99,69 +99,6 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
-     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
-     */
-    #[Test]
-    public function testGetIdentityId(): void
-    {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): ?int
-            {
-                return parent::getIdentityId();
-            }
-        };
-
-        $result = $Behavior->getIdentityId();
-        $this->assertSame(1, $result);
-    }
-
-    /**
-     * Tests for the `getIdentityId()` method when the request is `null`.
-     *
-     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
-     */
-    #[Test]
-    public function testGetIdentityIdWithNullRequest(): void
-    {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): ?int
-            {
-                return parent::getIdentityId();
-            }
-        };
-        $Behavior->request = null;
-
-        $result = $Behavior->getIdentityId();
-        $this->assertNull($result);
-    }
-
-    /**
-     * Tests for the `getIdentityId()` method when the identity is not valid.
-     *
-     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
-     */
-    #[Test]
-    #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
-    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
-    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
-    public function testGetIdentityIdWithoutValidIdentity(string $expectedExceptionMessage, ?User $Identity): void
-    {
-        $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', $Identity);
-        Router::setRequest($Request);
-
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): ?int
-            {
-                return parent::getIdentityId();
-            }
-        };
-
-        $this->expectExceptionMessage($expectedExceptionMessage);
-        $Behavior->getIdentityId();
-    }
-
-    /**
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
      */
     #[Test]
@@ -195,10 +132,29 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame($expectedKeys, array_keys($result->toArray()));
         $this->assertSame(Article::class, $result->entity_class);
         $this->assertSame(3, $result->entity_id);
-        $this->assertSame(2, $result->user_id);
+        $this->assertSame(5, $result->user_id);
         $this->assertSame(EntitiesLogType::Created, $result->type);
         $this->assertInstanceOf(DateTime::class, $result->datetime);
         $this->assertLessThanOrEqual(1, $result->datetime->diffInSeconds());
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the identity is not valid.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithNoEntityId(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
+        $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
     }
 
     /**
@@ -227,8 +183,15 @@ class EntitiesLogBehaviorTest extends TestCase
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
      */
     #[Test]
-    public function testBuildEntityWithNoEntityId(): void
+    #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
+    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
+    #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
+    public function testBuildEntityWithoutValidIdentity(string $expectedExceptionMessage, ?User $Identity): void
     {
+        $Request = new ServerRequest();
+        $Request = $Request->withAttribute('identity', $Identity);
+        Router::setRequest($Request);
+
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
@@ -236,8 +199,8 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
-        $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+        $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
     }
 
     /**
