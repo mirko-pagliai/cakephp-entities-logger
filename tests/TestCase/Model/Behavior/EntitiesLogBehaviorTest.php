@@ -36,7 +36,11 @@ class EntitiesLogBehaviorTest extends TestCase
         parent::setUp();
 
         $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', new User(['id' => 1]));
+        $Request = $Request
+            ->withAttribute('identity', new User(['id' => 1]))
+            ->withHeader('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36')
+            ->withEnv('REMOTE_ADDR', '127.0.0.1');
+
         Router::setRequest($Request);
     }
 
@@ -130,7 +134,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $this->expectExceptionMessage('Request is not an instance of Cake\Http\ServerRequest.');
+        $this->expectExceptionMessage('Request is not an instance of `Cake\Http\ServerRequest`.');
         $Behavior->getRequest();
     }
 
@@ -258,6 +262,34 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `saveEntitiesLog()` method, with Ipv6.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    #[TestWith(['192.168.1.100'])]
+    #[TestWith(['2001:0db8:85a3:0000:0000:8a2e:0370:7334'])]
+    public function testSaveEntitiesLogIpv6(string $ipAddress): void
+    {
+        $Request = new ServerRequest();
+        $Request = $Request
+            ->withAttribute('identity', new User(['id' => 1]))
+            ->withEnv('REMOTE_ADDR', $ipAddress);
+
+        Router::setRequest($Request);
+
+        $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            {
+                return parent::saveEntitiesLog($entity, $entitiesLogType);
+            }
+        };
+
+        $result = $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
+        $this->assertSame($ipAddress, $result->ip);
     }
 
     /**

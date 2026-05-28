@@ -13,6 +13,7 @@ use Cake\ORM\Association\BelongsTo;
 use Cake\TestSuite\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 
 /**
  * EntitiesLogsTable.
@@ -37,9 +38,12 @@ class EntitiesLogsTableTest extends TestCase
     {
         parent::setUp();
 
-        $this->EntitiesLogs ??= $this->fetchTable(EntitiesLogsTable::class);
+        $this->EntitiesLogs = $this->fetchTable(EntitiesLogsTable::class);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
     #[Test]
     public function testInitialize(): void
     {
@@ -51,6 +55,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertInstanceOf(UsersTable::class, $UsersBelongsTo->getTarget());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
     #[Test]
     public function testInitializeAlreadyHasUsersAssociation(): void
     {
@@ -66,8 +73,13 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertSame($AnotherUsersTable, $this->EntitiesLogs->Users->getTarget());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::validationDefault()
+     */
     #[Test]
-    public function testValidationDefault(): void
+    #[TestWith(['192.168.1.100'])]
+    #[TestWith(['2001:0db8:85a3:0000:0000:8a2e:0370:7334'])]
+    public function testValidationDefault(string $ipAddress): void
     {
         $EntitiesLog = $this->EntitiesLogs->newEntity([
             'entity_class' => 'App\Model\Entity\Article',
@@ -75,12 +87,17 @@ class EntitiesLogsTableTest extends TestCase
             'user_id' => 1,
             'type' => EntitiesLogType::Created,
             'datetime' => '2025-06-16 20:22:06',
-            'ip' => '192.168.1.100',
+            'ip' => $ipAddress,
             'user_agent' => '',
         ]);
+
         $this->assertEmpty($EntitiesLog->getErrors());
+        $this->assertSame($ipAddress, $EntitiesLog->ip);
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::validationDefault()
+     */
     #[Test]
     public function testValidationDefaultWithErrors(): void
     {
@@ -101,7 +118,7 @@ class EntitiesLogsTableTest extends TestCase
                 'dateTime' => 'The provided value must be a date and time of one of these formats: `ymd`',
             ],
             'ip' => [
-                'ipv4' => 'The provided value must be an IPv4 address',
+                'ip' => 'The provided value must be an IP address',
             ],
         ];
         $EntitiesLog = $this->EntitiesLogs->newEntity([
@@ -116,6 +133,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertSame($expected, $EntitiesLog->getErrors());
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::buildRules()
+     */
     #[Test]
     public function testBuildRules(): void
     {
@@ -129,6 +149,9 @@ class EntitiesLogsTableTest extends TestCase
         $this->assertTrue($this->EntitiesLogs->checkRules($EntitiesLog));
     }
 
+    /**
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::buildRules()
+     */
     #[Test]
     public function testBuildRulesWithErrors(): void
     {
