@@ -88,6 +88,8 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testConstructBehaviorAlreadyHasTheEntitiesLogsTableProperty(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public ?ServerRequest $request;
+
             public function __construct(Table $table, array $config = [])
             {
                 $this->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
@@ -97,41 +99,7 @@ class EntitiesLogBehaviorTest extends TestCase
         };
 
         $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
-    }
-
-    /**
-     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getRequest()
-     */
-    #[Test]
-    public function testGetRequest(): void
-    {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getRequest(): ServerRequest
-            {
-                return parent::getRequest();
-            }
-        };
-
-        $this->assertSame(Router::getRequest(), $Behavior->getRequest());
-    }
-
-    /**
-     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getRequest()
-     */
-    #[Test]
-    public function testGetRequestNotInstanceOfServerRequest(): void
-    {
-        Router::reload();
-
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getRequest(): ServerRequest
-            {
-                return parent::getRequest();
-            }
-        };
-
-        $this->expectExceptionMessage('Request is not an instance of Cake\Http\ServerRequest.');
-        $Behavior->getRequest();
+        $this->assertSame(Router::getRequest(), $Behavior->request);
     }
 
     /**
@@ -141,7 +109,7 @@ class EntitiesLogBehaviorTest extends TestCase
     public function testGetIdentityId(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): int
+            public function getIdentityId(): ?int
             {
                 return parent::getIdentityId();
             }
@@ -152,6 +120,34 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for the `getIdentityId()` method when the request is `null`.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
+     */
+    #[Test]
+    public function testGetIdentityIdWithNullRequest(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                parent::__construct($table, $config);
+
+                $this->request = null;
+            }
+
+            public function getIdentityId(): ?int
+            {
+                return parent::getIdentityId();
+            }
+        };
+
+        $result = $Behavior->getIdentityId();
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests for the `getIdentityId()` method when the identity is not valid.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::getIdentityId()
      */
     #[Test]
@@ -165,7 +161,7 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest($Request);
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function getIdentityId(): int
+            public function getIdentityId(): ?int
             {
                 return parent::getIdentityId();
             }
@@ -197,7 +193,7 @@ class EntitiesLogBehaviorTest extends TestCase
                 return 2;
             }
 
-            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
@@ -215,13 +211,41 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for the `buildEntity()` method when the request is `null`.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithNullRequest(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                parent::__construct($table, $config);
+
+                $this->request = null;
+            }
+
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the identity is not valid.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
      */
     #[Test]
     public function testBuildEntityWithNoEntityId(): void
     {
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
@@ -251,17 +275,45 @@ class EntitiesLogBehaviorTest extends TestCase
 
         /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable&\Mockery\MockInterface $EntitiesLogsTable */
         $EntitiesLogsTable = Mockery::mock(EntitiesLogsTable::class);
-        $EntitiesLogsTable->shouldReceive('saveOrFail')
+        $EntitiesLogsTable
+            ->shouldReceive('saveOrFail')
             ->once()
             ->with(Mockery::type(EntitiesLog::class), ['checkRules' => false])
             ->andReturn(new EntitiesLog());
+
         $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
     }
 
     /**
+     * Tests for the `saveEntitiesLog()` method when the request is `null`.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testSaveEntitiesLogWithNullRequest(): void
+    {
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                parent::__construct($table, $config);
+
+                $this->request = null;
+            }
+
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::saveEntitiesLog($entity, $entitiesLogType);
+            }
+        };
+
+        $result = $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+        $this->assertNull($result);
+    }
+
+    /**
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::afterSave()
      */
     #[Test]
     #[TestWith([EntitiesLogType::Created, true])]
@@ -289,6 +341,30 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for the `afterSave()` method when the request is `null`.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::afterSave()
+     */
+    #[Test]
+    public function testAfterSaveWithNullRequest(): void
+    {
+        $Table = new Table();
+
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                parent::__construct($table, $config);
+
+                $this->request = null;
+            }
+        };
+
+        $Table->behaviors()->set('EntitiesLog', $Behavior);
+        $event = $Table->dispatchEvent('Model.afterSave', [new Article(['id' => 3])]);
+        $this->assertNull($event->getResult());
+    }
+
+    /**
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::afterDelete()
      */
     #[Test]
@@ -311,5 +387,29 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $result = $Table->dispatchEvent('Model.afterDelete', [$Entity]);
         $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
+    }
+
+    /**
+     * Tests for the `afterDelete()` method when the request is `null`.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::afterDelete()
+     */
+    #[Test]
+    public function testAfterDeleteWithNullRequest(): void
+    {
+        $Table = new Table();
+
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function __construct(Table $table, array $config = [])
+            {
+                parent::__construct($table, $config);
+
+                $this->request = null;
+            }
+        };
+
+        $Table->behaviors()->set('EntitiesLog', $Behavior);
+        $event = $Table->dispatchEvent('Model.afterDelete', [new Article(['id' => 3])]);
+        $this->assertNull($event->getResult());
     }
 }
