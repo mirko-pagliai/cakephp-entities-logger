@@ -1137,16 +1137,16 @@
         },
         {
             "name": "cakephp/migrations",
-            "version": "5.2.0",
+            "version": "5.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cakephp/migrations.git",
-                "reference": "369d849a540a6815f402447119351ad6fe7894ac"
+                "reference": "a5f2d906286003755b0024f38a449cf62effe86f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cakephp/migrations/zipball/369d849a540a6815f402447119351ad6fe7894ac",
-                "reference": "369d849a540a6815f402447119351ad6fe7894ac",
+                "url": "https://api.github.com/repos/cakephp/migrations/zipball/a5f2d906286003755b0024f38a449cf62effe86f",
+                "reference": "a5f2d906286003755b0024f38a449cf62effe86f",
                 "shasum": ""
             },
             "require": {
@@ -1194,7 +1194,7 @@
                 "issues": "https://github.com/cakephp/migrations/issues",
                 "source": "https://github.com/cakephp/migrations"
             },
-            "time": "2026-05-13T14:46:37+00:00"
+            "time": "2026-05-28T15:32:42+00:00"
         },
         {
             "name": "dealerdirect/phpcodesniffer-composer-installer",
@@ -1711,11 +1711,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.56",
+            "version": "2.2.1",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/93a603c9fc3be8c3c93bbc8d22170ad766685537",
-                "reference": "93a603c9fc3be8c3c93bbc8d22170ad766685537",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/dea9c8f2d25cc849391042b71e429c1a4bf82660",
+                "reference": "dea9c8f2d25cc849391042b71e429c1a4bf82660",
                 "shasum": ""
             },
             "require": {
@@ -1737,6 +1737,17 @@
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ondřej Mirtes"
+                },
+                {
+                    "name": "Markus Staab"
+                },
+                {
+                    "name": "Vincent Langlet"
+                }
             ],
             "description": "PHPStan - PHP Static Analysis Tool",
             "keywords": [
@@ -1760,7 +1771,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-05-26T17:04:57+00:00"
+            "time": "2026-05-28T14:44:12+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2109,16 +2120,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "12.5.27",
+            "version": "12.5.28",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "f37c01edaf3a0cd820331462506af93f1495696e"
+                "reference": "5895d05f5bf421ed230fbd76e1277e4b8955def4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/f37c01edaf3a0cd820331462506af93f1495696e",
-                "reference": "f37c01edaf3a0cd820331462506af93f1495696e",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/5895d05f5bf421ed230fbd76e1277e4b8955def4",
+                "reference": "5895d05f5bf421ed230fbd76e1277e4b8955def4",
                 "shasum": ""
             },
             "require": {
@@ -2187,7 +2198,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/12.5.27"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/12.5.28"
             },
             "funding": [
                 {
@@ -2195,7 +2206,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2026-05-25T15:35:34+00:00"
+            "time": "2026-05-27T14:01:10+00:00"
         },
         {
             "name": "sebastian/cli-parser",
