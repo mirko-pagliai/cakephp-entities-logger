@@ -289,13 +289,14 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest($Request);
 
         $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
-            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
         };
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
+        $this->assertInstanceOf(EntitiesLog::class, $result);
         $this->assertSame($ipAddress, $result->ip);
     }
 
