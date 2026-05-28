@@ -201,6 +201,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
 
+        $this->assertInstanceOf(EntitiesLog::class, $result);
         $this->assertSame($expectedKeys, array_keys($result->toArray()));
         $this->assertSame(Article::class, $result->entity_class);
         $this->assertSame(3, $result->entity_id);
@@ -267,7 +268,7 @@ class EntitiesLogBehaviorTest extends TestCase
                 return new EntitiesLog();
             }
 
-            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
@@ -336,8 +337,8 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
-        $result = $Table->dispatchEvent('Model.afterSave', [$Entity]);
-        $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
+        $event = $Table->dispatchEvent('Model.afterSave', [$Entity]);
+        $this->assertInstanceOf(EntitiesLog::class, $event->getResult());
     }
 
     /**
@@ -385,8 +386,8 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
-        $result = $Table->dispatchEvent('Model.afterDelete', [$Entity]);
-        $this->assertInstanceOf(EntitiesLog::class, $result->getResult());
+        $event = $Table->dispatchEvent('Model.afterDelete', [$Entity]);
+        $this->assertInstanceOf(EntitiesLog::class, $event->getResult());
     }
 
     /**
