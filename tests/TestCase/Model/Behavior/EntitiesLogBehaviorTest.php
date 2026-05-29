@@ -29,32 +29,20 @@ use PHPUnit\Framework\Attributes\TestWith;
 class EntitiesLogBehaviorTest extends TestCase
 {
     /**
-     * @inheritDoc
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $Request = new ServerRequest();
-        $Request = $Request
-            ->withAttribute('identity', new User(['id' => 5]))
-            ->withHeader('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36')
-            ->withEnv('REMOTE_ADDR', '127.0.0.1');
-
-        Router::setRequest($Request);
-    }
-
-    /**
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
      */
     #[Test]
     public function testConstruct(): void
     {
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100']]);
+        Router::setRequest($request);
+
         $Table = new Table();
         $Table->setEntityClass(Article::class);
 
         $Behavior = new EntitiesLogBehavior($Table);
         $this->assertSame(EntitiesLogsTable::class, $Behavior->EntitiesLogsTable->getRegistryAlias());
+        $this->assertSame($request, $Behavior->request);
 
         $Association = $Table->getAssociation('EntitiesLogs');
         $this->assertInstanceOf(HasMany::class, $Association);
@@ -95,7 +83,6 @@ class EntitiesLogBehaviorTest extends TestCase
         $Behavior->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
 
         $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
-        $this->assertSame(Router::getRequest(), $Behavior->request);
     }
 
     /**
@@ -115,16 +102,15 @@ class EntitiesLogBehaviorTest extends TestCase
         ];
 
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
-            protected function getIdentityId(): int
-            {
-                return 2;
-            }
-
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        $Behavior->request = $request;
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
 
@@ -186,18 +172,18 @@ class EntitiesLogBehaviorTest extends TestCase
     #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
-    public function testBuildEntityWithoutValidIdentity(string $expectedExceptionMessage, ?User $Identity): void
+    public function testBuildEntityWithInvalidIdentity(string $expectedExceptionMessage, ?User $Identity): void
     {
-        $Request = new ServerRequest();
-        $Request = $Request->withAttribute('identity', $Identity);
-        Router::setRequest($Request);
-
         $Behavior = new class (new Table()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', $Identity);
+        $Behavior->request = $request;
 
         $this->expectExceptionMessage($expectedExceptionMessage);
         $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
@@ -244,19 +230,16 @@ class EntitiesLogBehaviorTest extends TestCase
     #[TestWith(['2001:0db8:85a3:0000:0000:8a2e:0370:7334'])]
     public function testSaveEntitiesLogIpv4AndIpv6(string $ipAddress): void
     {
-        $Request = new ServerRequest();
-        $Request = $Request
-            ->withAttribute('identity', new User(['id' => 1]))
-            ->withEnv('REMOTE_ADDR', $ipAddress);
-
-        Router::setRequest($Request);
-
         $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
             public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
         };
+
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => $ipAddress]]);
+        $request = $request->withAttribute('identity', new User(['id' => 1]));
+        $Behavior->request = $request;
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
         $this->assertInstanceOf(EntitiesLog::class, $result);
@@ -305,6 +288,10 @@ class EntitiesLogBehaviorTest extends TestCase
             ->once()
             ->andReturn(new EntitiesLog());
 
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        $Behavior->request = $request;
+
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
         $event = $Table->dispatchEvent('Model.afterSave', [$Entity]);
@@ -347,6 +334,10 @@ class EntitiesLogBehaviorTest extends TestCase
             ->with($Entity, EntitiesLogType::Deleted)
             ->once()
             ->andReturn(new EntitiesLog());
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        $Behavior->request = $request;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
