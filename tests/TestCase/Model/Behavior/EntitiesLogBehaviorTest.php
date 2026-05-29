@@ -186,7 +186,7 @@ class EntitiesLogBehaviorTest extends TestCase
     #[TestWith(['Unable to retrieve identity. Request does not have an identity attribute.', null])]
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User()])]
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
-    public function testBuildEntityWithoutValidIdentity(string $expectedExceptionMessage, ?User $Identity): void
+    public function testBuildEntityWithInvalidIdentity(string $expectedExceptionMessage, ?User $Identity): void
     {
         $Request = new ServerRequest();
         $Request = $Request->withAttribute('identity', $Identity);
