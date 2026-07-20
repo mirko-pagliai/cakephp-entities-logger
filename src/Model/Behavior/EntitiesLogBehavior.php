@@ -134,7 +134,7 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Handles the logic to be executed after an entity is saved.
      *
-     * @param \Cake\Event\EventInterface $event The event triggered after the save operation.
+     * @param \Cake\Event\EventInterface<\Cake\ORM\Table> $event The event triggered after the save operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was saved.
      * @return void
      */
@@ -152,7 +152,7 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Handles the logic to be executed after an entity is deleted.
      *
-     * @param \Cake\Event\EventInterface $event The event triggered after the delete operation.
+     * @param \Cake\Event\EventInterface<\Cake\ORM\Table> $event The event triggered after the delete operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was deleted.
      * @return void
      */
