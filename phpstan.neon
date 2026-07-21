@@ -12,7 +12,6 @@ parameters:
         - tests/bootstrap.php
 
     ignoreErrors:
-        - identifier: missingType.generics
         - identifier: missingType.iterableValue
         -
             message: '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::\w+\(\)\.$#'
