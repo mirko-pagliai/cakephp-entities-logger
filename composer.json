@@ -15,7 +15,7 @@
     "cakephp/cakephp": "^5.1"
   },
   "require-dev": {
-    "cakephp/cakephp-codesniffer": "^5.2",
+    "cakephp/cakephp-codesniffer": "^5.3.2",
     "cakephp/migrations": "^5.0",
     "cakedc/cakephp-phpstan": "^4.0",
     "mockery/mockery": "^1.6.10",
