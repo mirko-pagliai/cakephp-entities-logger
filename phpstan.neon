@@ -13,7 +13,3 @@ parameters:
 
     ignoreErrors:
         - identifier: missingType.iterableValue
-        -
-            identifier: method.notFound
-            message: '#^Call to an undefined method Mockery\\ExpectationInterface\|Mockery\\HigherOrderMessage::\w+\(\)\.$#'
-            path: tests/*
