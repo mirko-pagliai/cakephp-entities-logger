@@ -6,6 +6,7 @@ namespace Cake\EntitiesLogger\Test\TestCase\Model\Behavior;
 use App\Model\Entity\Article;
 use App\Model\Entity\User;
 use Cake\Datasource\EntityInterface;
+use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
@@ -14,6 +15,7 @@ use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Entity;
+use Cake\ORM\Exception\PersistenceFailedException;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
@@ -21,6 +23,7 @@ use Mockery;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Attributes\TestWith;
+use UnexpectedValueException;
 
 /**
  * EntitiesLogBehaviorTest
@@ -29,26 +32,76 @@ use PHPUnit\Framework\Attributes\TestWith;
 class EntitiesLogBehaviorTest extends TestCase
 {
     /**
+     * @inheritDoc
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Resets the router state, including the current request
+        Router::reload();
+    }
+
+    /**
+     * Internal method to get a table with a schema, so that its primary key can be read without querying the database.
+     *
+     * @param array<string, string> $columns Column names and types.
+     * @param array<string> $primaryKey Columns of the primary key.
+     * @return \Cake\ORM\Table
+     */
+    private function getTableWithSchema(array $columns = ['id' => 'integer'], array $primaryKey = ['id']): Table
+    {
+        $schema = array_map(callback: fn($type): array => compact('type'), array: $columns);
+        $schema['_constraints'] = ['primary' => ['type' => 'primary', 'columns' => $primaryKey]];
+
+        return new Table(['table' => 'articles'] + compact('schema'));
+    }
+
+    /**
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
      */
     #[Test]
     public function testConstruct(): void
     {
-        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100']]);
-        Router::setRequest($request);
-
         $Table = new Table();
         $Table->setEntityClass(Article::class);
 
         $Behavior = new EntitiesLogBehavior($Table);
         $this->assertSame(EntitiesLogsTable::class, $Behavior->EntitiesLogsTable->getRegistryAlias());
-        $this->assertSame($request, $Behavior->request);
 
         $Association = $Table->getAssociation('EntitiesLogs');
         $this->assertInstanceOf(HasMany::class, $Association);
         $this->assertInstanceOf(EntitiesLogsTable::class, $Association->getTarget());
-        $this->assertSame(['entity_class' => Article::class], $Association->getConditions());
         $this->assertSame(['EntitiesLogs.datetime' => 'ASC'], $Association->getSort());
+    }
+
+    /**
+     * Test for the `__construct()` method.
+     *
+     * Tests that the conditions of the `EntitiesLogs` association use the entity class that the table has when the
+     * query is built, not the one it had when the behavior was built.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
+    #[Test]
+    public function testConstructEntityClassCondition(): void
+    {
+        $Table = new Table();
+        $Table->setEntityClass(Article::class);
+
+        new EntitiesLogBehavior($Table);
+
+        $Query = $Table->getAssociation('EntitiesLogs')->find();
+        $Query->sql();
+        $this->assertContains(Article::class, array_column($Query->getValueBinder()->bindings(), 'value'));
+
+        $Table->setEntityClass(User::class);
+
+        $Query = $Table->getAssociation('EntitiesLogs')->find();
+        $Query->sql();
+        $values = array_column($Query->getValueBinder()->bindings(), 'value');
+        $this->assertContains(User::class, $values);
+        $this->assertNotContains(Article::class, $values);
     }
 
     /**
@@ -74,15 +127,31 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for `__construct` when the `EntitiesLogsTable` property has already been set before the constructor is
+     * called.
+     *
+     * In this case the property is not replaced and the table is used as the target of the `EntitiesLogs` association.
+     * This is what a class that extends the behavior and sets its own table of logs does.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
      */
     #[Test]
     public function testConstructBehaviorAlreadyHasTheEntitiesLogsTableProperty(): void
     {
-        $Behavior = new EntitiesLogBehavior(new Table());
-        $Behavior->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
+        $EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
+        $Table = new Table();
 
-        $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
+        $Behavior = new class ($Table, $EntitiesLogsTable) extends EntitiesLogBehavior {
+            public function __construct(Table $table, Table $EntitiesLogsTable)
+            {
+                $this->EntitiesLogsTable = $EntitiesLogsTable;
+
+                parent::__construct($table);
+            }
+        };
+
+        $this->assertSame($EntitiesLogsTable, $Behavior->EntitiesLogsTable);
+        $this->assertSame($EntitiesLogsTable, $Table->getAssociation('EntitiesLogs')->getTarget());
     }
 
     /**
@@ -101,16 +170,16 @@ class EntitiesLogBehaviorTest extends TestCase
             'user_agent',
         ];
 
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
 
-        $request = new ServerRequest();
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0']]);
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
 
@@ -122,25 +191,186 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame(EntitiesLogType::Created, $result->type);
         $this->assertInstanceOf(DateTime::class, $result->datetime);
         $this->assertLessThanOrEqual(1, $result->datetime->diffInSeconds());
+        $this->assertSame('192.168.0.100', $result->ip);
+        $this->assertSame('MyBrowser/1.0', $result->user_agent);
     }
 
     /**
-     * Tests for the `buildEntity()` method when the identity is not valid.
+     * Tests for the `buildEntity()` method when the request does not have the `User-Agent` header.
      *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
      */
     #[Test]
-    public function testBuildEntityWithNoEntityId(): void
+    public function testBuildEntityWithoutUserAgent(): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
 
-        $this->expectExceptionMessage('`' . Entity::class . '::$id` is null, expected non-null value.');
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        Router::setRequest($request);
+
+        $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame('', $result->user_agent);
+    }
+
+    /**
+     * Tests that `buildEntity()` reads the request when it is called, not when the behavior is built.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityUsesTheCurrentRequest(): void
+    {
+        Router::setRequest((new ServerRequest())->withAttribute('identity', new User(['id' => 1])));
+
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        // The request is replaced after the behavior has been built
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.200']]);
+        Router::setRequest($request->withAttribute('identity', new User(['id' => 7])));
+
+        $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame(7, $result->user_id);
+        $this->assertSame('192.168.0.200', $result->ip);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method with different primary keys.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    #[TestWith(['id', 3])]
+    #[TestWith(['id', '7'])]
+    #[TestWith(['article_id', 3])]
+    public function testBuildEntityWithPrimaryKey(string $primaryKey, int|string $entityId): void
+    {
+        $Behavior = new class ($this->getTableWithSchema([$primaryKey => 'integer'], [$primaryKey])) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        Router::setRequest($request);
+
+        $result = $Behavior->buildEntity(new Article([$primaryKey => $entityId]), EntitiesLogType::Created);
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame((int)$entityId, $result->entity_id);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the entity is a generic `Cake\ORM\Entity`.
+     *
+     * The entity class is checked before the primary key, so the exception is about the entity class even if the entity
+     * does not have the primary key.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithGenericEntity(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: the table must have its own entity class.');
         $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the entity does not have the primary key.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    #[TestWith(['id'])]
+    #[TestWith(['article_id'])]
+    public function testBuildEntityWithNoEntityId(string $primaryKey): void
+    {
+        $Behavior = new class ($this->getTableWithSchema([$primaryKey => 'integer'], [$primaryKey])) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(MissingPropertyException::class);
+        $this->expectExceptionMessage('`' . Article::class . '::$' . $primaryKey . '` is null, expected non-null value.');
+        $Behavior->buildEntity(new Article(), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the primary key is composite.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithCompositePrimaryKey(): void
+    {
+        $Table = $this->getTableWithSchema(['article_id' => 'integer', 'user_id' => 'integer'], ['article_id', 'user_id']);
+        $Behavior = new class ($Table) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to log `' . Article::class . '`: a single-column primary key is required.');
+        $Behavior->buildEntity(new Article(['article_id' => 3, 'user_id' => 5]), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the entity id is not an integer (for example, an UUID).
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    #[TestWith(['550e8400-e29b-41d4-a716-446655440000'])]
+    #[TestWith(['abc'])]
+    #[TestWith([3.5])]
+    public function testBuildEntityWithNonIntegerEntityId(string|float $entityId): void
+    {
+        $Behavior = new class ($this->getTableWithSchema(['id' => 'string'])) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to log `' . Article::class . '`: the primary key must be an integer.');
+        $Behavior->buildEntity(new Article(['id' => $entityId]), EntitiesLogType::Created);
     }
 
     /**
@@ -151,15 +381,36 @@ class EntitiesLogBehaviorTest extends TestCase
     #[Test]
     public function testBuildEntityWithNullRequest(): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
-        $Behavior->request = null;
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the request is `null` and the primary key is composite.
+     *
+     * The request is checked first, so the primary key is not even read and nothing is thrown.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithNullRequestAndCompositePrimaryKey(): void
+    {
+        $Table = $this->getTableWithSchema(['article_id' => 'integer', 'user_id' => 'integer'], ['article_id', 'user_id']);
+        $Behavior = new class ($Table) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $result = $Behavior->buildEntity(new Entity(['article_id' => 3, 'user_id' => 5]), EntitiesLogType::Created);
         $this->assertNull($result);
     }
 
@@ -174,7 +425,7 @@ class EntitiesLogBehaviorTest extends TestCase
     #[TestWith(['`App\Model\Entity\User::$id` is null, expected non-null value.', new User(['id' => null])])]
     public function testBuildEntityWithInvalidIdentity(string $expectedExceptionMessage, ?User $Identity): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
             public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::buildEntity($entity, $entitiesLogType);
@@ -183,19 +434,26 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', $Identity);
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $this->expectExceptionMessage($expectedExceptionMessage);
         $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
     }
 
     /**
+     * Tests for the `saveEntitiesLog()` method, with the `checkRules` option, which is `true` by default.
+     *
+     * @param array<string, bool> $config
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
      */
     #[Test]
-    public function testSaveEntitiesLog(): void
+    #[TestWith([[], true])]
+    #[TestWith([['checkRules' => true], true])]
+    #[TestWith([['checkRules' => false], false])]
+    public function testSaveEntitiesLog(array $config, bool $expectedCheckRules): void
     {
-        $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
+        $Behavior = new class (new Table(), $config) extends EntitiesLogBehavior {
             protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
             {
                 return new EntitiesLog();
@@ -212,12 +470,35 @@ class EntitiesLogBehaviorTest extends TestCase
         $EntitiesLogsTable
             ->shouldReceive('saveOrFail')
             ->once()
-            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => false])
+            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => $expectedCheckRules])
             ->andReturn(new EntitiesLog());
 
         $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `saveEntitiesLog()` method when the rules are checked and the user does not exist.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testSaveEntitiesLogWithCheckRulesAndUserThatDoesNotExist(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::saveEntitiesLog($entity, $entitiesLogType);
+            }
+        };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 999]));
+        Router::setRequest($request);
+
+        $this->expectException(PersistenceFailedException::class);
+        $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
     }
 
     /**
@@ -230,7 +511,7 @@ class EntitiesLogBehaviorTest extends TestCase
     #[TestWith(['2001:0db8:85a3:0000:0000:8a2e:0370:7334'])]
     public function testSaveEntitiesLogIpv4AndIpv6(string $ipAddress): void
     {
-        $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema(), ['checkRules' => false]) extends EntitiesLogBehavior {
             public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
@@ -239,7 +520,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => $ipAddress]]);
         $request = $request->withAttribute('identity', new User(['id' => 1]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
         $this->assertInstanceOf(EntitiesLog::class, $result);
@@ -254,13 +535,12 @@ class EntitiesLogBehaviorTest extends TestCase
     #[Test]
     public function testSaveEntitiesLogWithNullRequest(): void
     {
-        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
             public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
             {
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
         };
-        $Behavior->request = null;
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
         $this->assertNull($result);
@@ -290,7 +570,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
@@ -309,7 +589,6 @@ class EntitiesLogBehaviorTest extends TestCase
         $Table = new Table();
 
         $Behavior = new EntitiesLogBehavior($Table);
-        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterSave', [new Article(['id' => 3])]);
@@ -337,7 +616,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
@@ -356,7 +635,6 @@ class EntitiesLogBehaviorTest extends TestCase
         $Table = new Table();
 
         $Behavior = new EntitiesLogBehavior($Table);
-        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterDelete', [new Article(['id' => 3])]);

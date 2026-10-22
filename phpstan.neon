@@ -12,4 +12,7 @@ parameters:
         - tests/bootstrap.php
 
     ignoreErrors:
-        - identifier: missingType.iterableValue
+        -
+            identifier: missingType.iterableValue
+            message: '#^Class Cake\\EntitiesLogger\\Model\\Table\\EntitiesLogsTable has PHPDoc tag \@method for method (findOrCreate|get|(new|patch)Entit\w+|(delete|save)(Many)?(OrFail)?)\(\) parameter \#\d+ \$\w+ with no value type specified in iterable type (array|iterable)\.$#'
+            path: src/Model/Table/*Table.php

@@ -45,4 +45,4 @@ $loader = new SchemaLoader();
 $loader->loadInternalFile(TESTS . 'schema.php');
 
 $migrator = new Migrator();
-$migrator->run(['skip' => ['users']]);
+$migrator->run(['skip' => ['users', 'articles']]);

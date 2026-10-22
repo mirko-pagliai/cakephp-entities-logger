@@ -3,19 +3,22 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Model\Behavior;
 
+use Cake\Database\Expression\QueryExpression;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Event\EventInterface;
-use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Behavior;
+use Cake\ORM\Entity;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
+use Cake\Validation\Validation;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Behavior for logging changes to entities.
@@ -33,16 +36,12 @@ class EntitiesLogBehavior extends Behavior
 
     public EntitiesLogsTable|Table $EntitiesLogsTable;
 
-    public ?ServerRequest $request = null;
-
     /**
      * @inheritDoc
      */
     public function __construct(Table $table, array $config = [])
     {
         parent::__construct($table, $config);
-
-        $this->request = Router::getRequest();
 
         if (empty($this->EntitiesLogsTable)) {
             $this->EntitiesLogsTable = $this->fetchTable(EntitiesLogsTable::class);
@@ -56,7 +55,8 @@ class EntitiesLogBehavior extends Behavior
             $table->hasMany('EntitiesLogs', [
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
-                'conditions' => ['entity_class' => $table->getEntityClass()],
+                // The entity class is read when the query is built, because the table can change it after this point
+                'conditions' => fn(QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
                 'sort' => ['EntitiesLogs.datetime' => 'ASC'],
                 'strategy' => 'select',
             ]);
@@ -71,25 +71,46 @@ class EntitiesLogBehavior extends Behavior
      * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null Returns an `EntitiesLog` entity or `null` if the
      * request is unavailable.
      * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity or identity is missing required properties.
+     * @throws \UnexpectedValueException If the entity is a generic `Cake\ORM\Entity`, the primary key of the table is
+     * composite or the entity id is not an integer.
      * @throws \RuntimeException If the request does not contain an identity attribute.
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
     {
-        // Checks for the entity's id
-        if (!isset($entity->id)) {
-            throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
+        $request = Router::getRequest();
+        if (!$request) {
+            return null;
         }
 
-        if (!$this->request) {
-            return null;
+        // The generic entity class does not identify the table, so the logs of different tables would be mixed up
+        if ($entity::class === Entity::class) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the table must have its own entity class.');
+        }
+
+        $primaryKey = $this->table()->getPrimaryKey();
+        if (is_array($primaryKey)) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: a single-column primary key is required.');
+        }
+
+        // Checks for the entity's id
+        $entityId = $entity->get($primaryKey);
+        if ($entityId === null) {
+            throw new MissingPropertyException('`' . $entity::class . '::$' . $primaryKey . '` is null, expected non-null value.');
+        }
+
+        if (!Validation::isInteger($entityId)) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the primary key must be an integer.');
         }
 
         /**
          * Checks for the identity attribute.
          *
+         * It is usually a decorator of the user entity (for example, `Authentication\Identity`) that exposes its
+         * properties. The `EntityInterface` type only lets static analysis accept the access to `$id`.
+         *
          * @var \Cake\Datasource\EntityInterface|null $Identity
          */
-        $Identity = $this->request->getAttribute('identity');
+        $Identity = $request->getAttribute('identity');
         if (!$Identity) {
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
@@ -102,12 +123,12 @@ class EntitiesLogBehavior extends Behavior
         /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog $EntitiesLog */
         $EntitiesLog = $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
-            'entity_id' => $entity->id,
+            'entity_id' => $entityId,
             'user_id' => $Identity->id,
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
-            'ip' => $this->request->clientIp(),
-            'user_agent' => $this->request->getHeaderLine('User-Agent'),
+            'ip' => $request->clientIp(),
+            'user_agent' => $request->getHeaderLine('User-Agent'),
         ]);
 
         return $EntitiesLog;
@@ -141,10 +162,6 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
-        if (!$this->request) {
-            return;
-        }
-
         $type = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
 
         $event->setResult($this->saveEntitiesLog($entity, $type));
@@ -159,10 +176,6 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        if (!$this->request) {
-            return;
-        }
-
         $event->setResult($this->saveEntitiesLog($entity, EntitiesLogType::Deleted));
     }
 }

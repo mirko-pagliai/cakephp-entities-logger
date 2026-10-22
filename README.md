@@ -61,3 +61,52 @@ class ArticlesTable extends Table
     }
 }
 ```
+
+## Requests and identity
+
+The log stores the user who made the change, so it is created only when there is a request:
+
+* when there is no current request (for example, in a shell command or in a cronjob), nothing is logged, and the entity
+  is saved or deleted as usual;
+* when there is a request, but it has no `identity` attribute (for example, the user is not authenticated), or the
+  identity has no `id`, an exception is thrown when the entity is saved or deleted and the changes are rolled back, so
+  that a change without an author is never saved silently.
+
+## Supported primary keys
+
+The `entity_id` column of the `entities_logs` table is an integer. For this reason, the tables that load the behavior
+must have a single-column primary key (it doesn't have to be named `id`) whose value is an integer.
+
+If the primary key is composite or its value is not an integer (for example, a UUID), the log cannot be saved and an
+`UnexpectedValueException` is thrown when the entity is saved or deleted.
+
+The same applies to the identity stored in the request (the user), whose `id` must be an integer.
+
+## Entity class
+
+The logs of an entity are identified by the `entity_class` and `entity_id` columns, and the `EntitiesLogs` association
+added by the behavior finds the logs whose `entity_class` is exactly the entity class of the table. For this reason,
+the logs of entities of other classes (even subclasses) are not found.
+
+The entity class must identify the table: each table that loads the behavior must have its own entity class. Tables
+that share the same entity class would also share the logs (the same `entity_id` of two tables would be mixed up), so
+the generic `Cake\ORM\Entity` class, which CakePHP uses when a table has no entity class of its own, is not accepted:
+an `UnexpectedValueException` is thrown when the entity is saved or deleted.
+
+## IP address
+
+The IP address is taken from `ServerRequest::clientIp()`. If the application is behind a proxy or a load balancer, the
+request must trust it (`ServerRequest::$trustProxy`), otherwise the address of the proxy is logged instead of the one of
+the client.
+
+## Logs on a different connection
+
+The log is saved in the `afterSave()` and `afterDelete()` callbacks of the table that loaded the behavior, so inside the
+transaction of the entity being saved or deleted.
+
+If you store the logs on a different connection (for example, with your own `EntitiesLogsTable` that overrides
+`defaultConnectionName()`), the two cannot be rolled back together: if the transaction is rolled back after the log has
+been written (for example, when the save is part of a larger transaction), the log is kept.
+
+The `afterSaveCommit()` and `afterDeleteCommit()` callbacks are not used, because CakePHP does not dispatch those
+events when the save is part of a larger transaction, and the log would be lost.
