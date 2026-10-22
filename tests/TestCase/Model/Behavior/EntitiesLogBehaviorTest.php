@@ -15,6 +15,7 @@ use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Entity;
+use Cake\ORM\Exception\PersistenceFailedException;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
@@ -176,7 +177,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $request = new ServerRequest();
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0']]);
         $request = $request->withAttribute('identity', new User(['id' => 5]));
         Router::setRequest($request);
 
@@ -265,7 +266,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0']]);
+        $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
         Router::setRequest($request);
 
@@ -415,12 +416,17 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for the `saveEntitiesLog()` method, with the `checkRules` option, which is `true` by default.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
      */
     #[Test]
-    public function testSaveEntitiesLog(): void
+    #[TestWith([[], true])]
+    #[TestWith([['checkRules' => true], true])]
+    #[TestWith([['checkRules' => false], false])]
+    public function testSaveEntitiesLog(array $config, bool $expectedCheckRules): void
     {
-        $Behavior = new class (new Table(), ['checkRules' => false]) extends EntitiesLogBehavior {
+        $Behavior = new class (new Table(), $config) extends EntitiesLogBehavior {
             protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): EntitiesLog
             {
                 return new EntitiesLog();
@@ -437,12 +443,35 @@ class EntitiesLogBehaviorTest extends TestCase
         $EntitiesLogsTable
             ->shouldReceive('saveOrFail')
             ->once()
-            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => false])
+            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => $expectedCheckRules])
             ->andReturn(new EntitiesLog());
 
         $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `saveEntitiesLog()` method when the rules are checked and the user does not exist.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testSaveEntitiesLogWithCheckRulesAndUserThatDoesNotExist(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function saveEntitiesLog(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::saveEntitiesLog($entity, $entitiesLogType);
+            }
+        };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 999]));
+        Router::setRequest($request);
+
+        $this->expectException(PersistenceFailedException::class);
+        $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
     }
 
     /**
