@@ -88,6 +88,11 @@ The logs of an entity are identified by the `entity_class` and `entity_id` colum
 added by the behavior finds the logs whose `entity_class` is exactly the entity class of the table. For this reason,
 the logs of entities of other classes (even subclasses) are not found.
 
+The entity class must identify the table: each table that loads the behavior must have its own entity class. Tables
+that share the same entity class would also share the logs (the same `entity_id` of two tables would be mixed up), so
+the generic `Cake\ORM\Entity` class, which CakePHP uses when a table has no entity class of its own, is not accepted:
+an `UnexpectedValueException` is thrown when the entity is saved or deleted.
+
 ## IP address
 
 The IP address is taken from `ServerRequest::clientIp()`. If the application is behind a proxy or a load balancer, the

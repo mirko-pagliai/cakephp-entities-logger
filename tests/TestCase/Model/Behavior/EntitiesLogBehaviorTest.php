@@ -270,10 +270,35 @@ class EntitiesLogBehaviorTest extends TestCase
         $request = $request->withAttribute('identity', new User(['id' => 5]));
         Router::setRequest($request);
 
-        $result = $Behavior->buildEntity(new Entity([$primaryKey => $entityId]), EntitiesLogType::Created);
+        $result = $Behavior->buildEntity(new Article([$primaryKey => $entityId]), EntitiesLogType::Created);
 
         $this->assertInstanceOf(EntitiesLog::class, $result);
         $this->assertSame((int)$entityId, $result->entity_id);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the entity is a generic `Cake\ORM\Entity`.
+     *
+     * The entity class is checked before the primary key, so the exception is about the entity class even if the entity
+     * does not have the primary key.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithGenericEntity(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: the table must have its own entity class.');
+        $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
     }
 
     /**
@@ -296,8 +321,8 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest(new ServerRequest());
 
         $this->expectException(MissingPropertyException::class);
-        $this->expectExceptionMessage('`' . Entity::class . '::$' . $primaryKey . '` is null, expected non-null value.');
-        $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
+        $this->expectExceptionMessage('`' . Article::class . '::$' . $primaryKey . '` is null, expected non-null value.');
+        $Behavior->buildEntity(new Article(), EntitiesLogType::Created);
     }
 
     /**
@@ -319,8 +344,8 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest(new ServerRequest());
 
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: a single-column primary key is required.');
-        $Behavior->buildEntity(new Entity(['article_id' => 3, 'user_id' => 5]), EntitiesLogType::Created);
+        $this->expectExceptionMessage('Unable to log `' . Article::class . '`: a single-column primary key is required.');
+        $Behavior->buildEntity(new Article(['article_id' => 3, 'user_id' => 5]), EntitiesLogType::Created);
     }
 
     /**
@@ -344,8 +369,8 @@ class EntitiesLogBehaviorTest extends TestCase
         Router::setRequest(new ServerRequest());
 
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: the primary key must be an integer.');
-        $Behavior->buildEntity(new Entity(['id' => $entityId]), EntitiesLogType::Created);
+        $this->expectExceptionMessage('Unable to log `' . Article::class . '`: the primary key must be an integer.');
+        $Behavior->buildEntity(new Article(['id' => $entityId]), EntitiesLogType::Created);
     }
 
     /**

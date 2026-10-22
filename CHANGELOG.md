@@ -11,4 +11,7 @@
 * added the `entities_logs_entity_idx` index on the `entity_class` and `entity_id` columns of the `entities_logs` table,
   used to find the logs of an entity. You need to run the plugin migrations to apply it;
 * the `user_id` field of `EntitiesLogsTable` is now required on creation, like the other fields, so a missing value
-  gives a validation error instead of a database error.
+  gives a validation error instead of a database error;
+* `EntitiesLogBehavior` now throws an `UnexpectedValueException` if the entity being saved or deleted is a generic
+  `Cake\ORM\Entity`, so a table must have its own entity class: otherwise the logs of tables with the same entity class
+  would be mixed up.

@@ -12,6 +12,7 @@ use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Event\EventInterface;
 use Cake\I18n\DateTime;
 use Cake\ORM\Behavior;
+use Cake\ORM\Entity;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
@@ -70,7 +71,8 @@ class EntitiesLogBehavior extends Behavior
      * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null Returns an `EntitiesLog` entity or `null` if the
      * request is unavailable.
      * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity or identity is missing required properties.
-     * @throws \UnexpectedValueException If the primary key of the table is composite or the entity id is not an integer.
+     * @throws \UnexpectedValueException If the entity is a generic `Cake\ORM\Entity`, the primary key of the table is
+     * composite or the entity id is not an integer.
      * @throws \RuntimeException If the request does not contain an identity attribute.
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
@@ -78,6 +80,11 @@ class EntitiesLogBehavior extends Behavior
         $request = Router::getRequest();
         if (!$request) {
             return null;
+        }
+
+        // The generic entity class does not identify the table, so the logs of different tables would be mixed up
+        if ($entity::class === Entity::class) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the table must have its own entity class.');
         }
 
         $primaryKey = $this->table()->getPrimaryKey();
