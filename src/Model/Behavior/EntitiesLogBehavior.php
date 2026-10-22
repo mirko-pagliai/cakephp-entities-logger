@@ -98,6 +98,9 @@ class EntitiesLogBehavior extends Behavior
         /**
          * Checks for the identity attribute.
          *
+         * It is usually a decorator of the user entity (for example, `Authentication\Identity`) that exposes its
+         * properties. The `EntityInterface` type only lets static analysis accept the access to `$id`.
+         *
          * @var \Cake\Datasource\EntityInterface|null $Identity
          */
         $Identity = $request->getAttribute('identity');
