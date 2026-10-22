@@ -61,3 +61,15 @@ class ArticlesTable extends Table
     }
 }
 ```
+
+## Logs on a different connection
+
+The log is saved in the `afterSave()` and `afterDelete()` callbacks of the table that loaded the behavior, so inside the
+transaction of the entity being saved or deleted.
+
+If you store the logs on a different connection (for example with your own `EntitiesLogsTable` that overrides
+`defaultConnectionName()`), the two cannot be rolled back together: if the transaction is rolled back after the log has
+been written (for example when the save is part of a larger transaction), the log is kept.
+
+The `afterSaveCommit()` and `afterDeleteCommit()` callbacks are not used, because CakePHP does not dispatch those
+events when the save is part of a larger transaction, and the log would be lost.
