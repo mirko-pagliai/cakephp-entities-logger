@@ -14,7 +14,9 @@ use Cake\ORM\Behavior;
 use Cake\ORM\Locator\LocatorAwareTrait;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
+use Cake\Validation\Validation;
 use RuntimeException;
+use UnexpectedValueException;
 
 /**
  * Behavior for logging changes to entities.
@@ -66,13 +68,24 @@ class EntitiesLogBehavior extends Behavior
      * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null Returns an `EntitiesLog` entity or `null` if the
      * request is unavailable.
      * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity or identity is missing required properties.
+     * @throws \UnexpectedValueException If the primary key of the table is composite or the entity id is not an integer.
      * @throws \RuntimeException If the request does not contain an identity attribute.
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
     {
+        $primaryKey = $this->table()->getPrimaryKey();
+        if (is_array($primaryKey)) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: a single-column primary key is required.');
+        }
+
         // Checks for the entity's id
-        if (!isset($entity->id)) {
-            throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
+        $entityId = $entity->get($primaryKey);
+        if ($entityId === null) {
+            throw new MissingPropertyException('`' . $entity::class . '::$' . $primaryKey . '` is null, expected non-null value.');
+        }
+
+        if (!Validation::isInteger($entityId)) {
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the primary key must be an integer.');
         }
 
         $request = Router::getRequest();
@@ -98,7 +111,7 @@ class EntitiesLogBehavior extends Behavior
         /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog $EntitiesLog */
         $EntitiesLog = $this->EntitiesLogsTable->newEntity([
             'entity_class' => $entity::class,
-            'entity_id' => $entity->id,
+            'entity_id' => $entityId,
             'user_id' => $Identity->id,
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),

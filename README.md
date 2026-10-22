@@ -62,14 +62,24 @@ class ArticlesTable extends Table
 }
 ```
 
+## Supported primary keys
+
+The `entity_id` column of the `entities_logs` table is an integer. For this reason, the tables that load the behavior
+must have a single-column primary key (it doesn't have to be named `id`) whose value is an integer.
+
+If the primary key is composite or its value is not an integer (for example, a UUID), the log can not be saved and an
+`UnexpectedValueException` is thrown when the entity is saved or deleted.
+
+The same applies to the identity stored in the request (the user), whose `id` must be an integer.
+
 ## Logs on a different connection
 
 The log is saved in the `afterSave()` and `afterDelete()` callbacks of the table that loaded the behavior, so inside the
 transaction of the entity being saved or deleted.
 
-If you store the logs on a different connection (for example with your own `EntitiesLogsTable` that overrides
+If you store the logs on a different connection (for example, with your own `EntitiesLogsTable` that overrides
 `defaultConnectionName()`), the two cannot be rolled back together: if the transaction is rolled back after the log has
-been written (for example when the save is part of a larger transaction), the log is kept.
+been written (for example, when the save is part of a larger transaction), the log is kept.
 
 The `afterSaveCommit()` and `afterDeleteCommit()` callbacks are not used, because CakePHP does not dispatch those
 events when the save is part of a larger transaction, and the log would be lost.
