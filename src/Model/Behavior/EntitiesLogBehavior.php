@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Cake\EntitiesLogger\Model\Behavior;
 
+use Cake\Database\Expression\QueryExpression;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\MissingPropertyException;
 use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
@@ -53,7 +54,8 @@ class EntitiesLogBehavior extends Behavior
             $table->hasMany('EntitiesLogs', [
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
-                'conditions' => ['entity_class' => $table->getEntityClass()],
+                // The entity class is read when the query is built, because the table can change it after this point
+                'conditions' => fn (QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
                 'sort' => ['EntitiesLogs.datetime' => 'ASC'],
                 'strategy' => 'select',
             ]);

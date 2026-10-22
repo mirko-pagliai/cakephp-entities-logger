@@ -71,8 +71,36 @@ class EntitiesLogBehaviorTest extends TestCase
         $Association = $Table->getAssociation('EntitiesLogs');
         $this->assertInstanceOf(HasMany::class, $Association);
         $this->assertInstanceOf(EntitiesLogsTable::class, $Association->getTarget());
-        $this->assertSame(['entity_class' => Article::class], $Association->getConditions());
         $this->assertSame(['EntitiesLogs.datetime' => 'ASC'], $Association->getSort());
+    }
+
+    /**
+     * Test for the `__construct()` method.
+     *
+     * Tests that the conditions of the `EntitiesLogs` association use the entity class that the table has when the
+     * query is built, not the one it had when the behavior was built.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
+    #[Test]
+    public function testConstructEntityClassCondition(): void
+    {
+        $Table = new Table();
+        $Table->setEntityClass(Article::class);
+
+        new EntitiesLogBehavior($Table);
+
+        $Query = $Table->getAssociation('EntitiesLogs')->find();
+        $Query->sql();
+        $this->assertContains(Article::class, array_column($Query->getValueBinder()->bindings(), 'value'));
+
+        $Table->setEntityClass(User::class);
+
+        $Query = $Table->getAssociation('EntitiesLogs')->find();
+        $Query->sql();
+        $values = array_column($Query->getValueBinder()->bindings(), 'value');
+        $this->assertContains(User::class, $values);
+        $this->assertNotContains(Article::class, $values);
     }
 
     /**

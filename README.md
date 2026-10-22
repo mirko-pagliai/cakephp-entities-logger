@@ -82,6 +82,12 @@ If the primary key is composite or its value is not an integer (for example, a U
 
 The same applies to the identity stored in the request (the user), whose `id` must be an integer.
 
+## Entity class
+
+The logs of an entity are identified by the `entity_class` and `entity_id` columns, and the `EntitiesLogs` association
+added by the behavior finds the logs whose `entity_class` is exactly the entity class of the table. For this reason,
+the logs of entities of other classes (even subclasses) are not found.
+
 ## Logs on a different connection
 
 The log is saved in the `afterSave()` and `afterDelete()` callbacks of the table that loaded the behavior, so inside the
