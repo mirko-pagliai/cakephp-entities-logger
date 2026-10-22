@@ -55,7 +55,7 @@ class EntitiesLogBehavior extends Behavior
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
                 // The entity class is read when the query is built, because the table can change it after this point
-                'conditions' => fn (QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
+                'conditions' => fn(QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
                 'sort' => ['EntitiesLogs.datetime' => 'ASC'],
                 'strategy' => 'select',
             ]);
@@ -75,6 +75,11 @@ class EntitiesLogBehavior extends Behavior
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
     {
+        $request = Router::getRequest();
+        if (!$request) {
+            return null;
+        }
+
         $primaryKey = $this->table()->getPrimaryKey();
         if (is_array($primaryKey)) {
             throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: a single-column primary key is required.');
@@ -88,11 +93,6 @@ class EntitiesLogBehavior extends Behavior
 
         if (!Validation::isInteger($entityId)) {
             throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the primary key must be an integer.');
-        }
-
-        $request = Router::getRequest();
-        if (!$request) {
-            return null;
         }
 
         /**
@@ -155,10 +155,6 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
-        if (!Router::getRequest()) {
-            return;
-        }
-
         $type = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
 
         $event->setResult($this->saveEntitiesLog($entity, $type));
@@ -173,10 +169,6 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        if (!Router::getRequest()) {
-            return;
-        }
-
         $event->setResult($this->saveEntitiesLog($entity, EntitiesLogType::Deleted));
     }
 }

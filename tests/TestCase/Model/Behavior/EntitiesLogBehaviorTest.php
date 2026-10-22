@@ -249,6 +249,8 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
+        Router::setRequest(new ServerRequest());
+
         $this->expectException(MissingPropertyException::class);
         $this->expectExceptionMessage('`' . Entity::class . '::$' . $primaryKey . '` is null, expected non-null value.');
         $Behavior->buildEntity(new Entity(), EntitiesLogType::Created);
@@ -269,6 +271,8 @@ class EntitiesLogBehaviorTest extends TestCase
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
+
+        Router::setRequest(new ServerRequest());
 
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: a single-column primary key is required.');
@@ -293,6 +297,8 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
+        Router::setRequest(new ServerRequest());
+
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Unable to log `' . Entity::class . '`: the primary key must be an integer.');
         $Behavior->buildEntity(new Entity(['id' => $entityId]), EntitiesLogType::Created);
@@ -314,6 +320,28 @@ class EntitiesLogBehaviorTest extends TestCase
         };
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+        $this->assertNull($result);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the request is `null` and the primary key is composite.
+     *
+     * The request is checked first, so the primary key is not even read and nothing is thrown.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithNullRequestAndCompositePrimaryKey(): void
+    {
+        $Table = $this->getTableWithSchema(['article_id' => 'integer', 'user_id' => 'integer'], ['article_id', 'user_id']);
+        $Behavior = new class ($Table) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $result = $Behavior->buildEntity(new Entity(['article_id' => 3, 'user_id' => 5]), EntitiesLogType::Created);
         $this->assertNull($result);
     }
 
