@@ -126,15 +126,31 @@ class EntitiesLogBehaviorTest extends TestCase
     }
 
     /**
+     * Tests for `__construct` when the `EntitiesLogsTable` property has already been set before the constructor is
+     * called.
+     *
+     * In this case the property is not replaced and the table is used as the target of the `EntitiesLogs` association.
+     * This is what a class that extends the behavior and sets its own table of logs does.
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
      */
     #[Test]
     public function testConstructBehaviorAlreadyHasTheEntitiesLogsTableProperty(): void
     {
-        $Behavior = new EntitiesLogBehavior(new Table());
-        $Behavior->EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
+        $EntitiesLogsTable = new Table(['alias' => 'MyEntitiesLogsTable']);
+        $Table = new Table();
 
-        $this->assertSame('MyEntitiesLogsTable', $Behavior->EntitiesLogsTable->getRegistryAlias());
+        $Behavior = new class ($Table, $EntitiesLogsTable) extends EntitiesLogBehavior {
+            public function __construct(Table $table, Table $EntitiesLogsTable)
+            {
+                $this->EntitiesLogsTable = $EntitiesLogsTable;
+
+                parent::__construct($table);
+            }
+        };
+
+        $this->assertSame($EntitiesLogsTable, $Behavior->EntitiesLogsTable);
+        $this->assertSame($EntitiesLogsTable, $Table->getAssociation('EntitiesLogs')->getTarget());
     }
 
     /**
