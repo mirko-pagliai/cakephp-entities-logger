@@ -62,12 +62,22 @@ class ArticlesTable extends Table
 }
 ```
 
+## Requests and identity
+
+The log stores the user who made the change, so it is created only when there is a request:
+
+* when there is no current request (for example, in a shell command or in a cronjob), nothing is logged, and the entity
+  is saved or deleted as usual;
+* when there is a request, but it has no `identity` attribute (for example, the user is not authenticated), or the
+  identity has no `id`, an exception is thrown when the entity is saved or deleted and the changes are rolled back, so
+  that a change without an author is never saved silently.
+
 ## Supported primary keys
 
 The `entity_id` column of the `entities_logs` table is an integer. For this reason, the tables that load the behavior
 must have a single-column primary key (it doesn't have to be named `id`) whose value is an integer.
 
-If the primary key is composite or its value is not an integer (for example, a UUID), the log can not be saved and an
+If the primary key is composite or its value is not an integer (for example, a UUID), the log cannot be saved and an
 `UnexpectedValueException` is thrown when the entity is saved or deleted.
 
 The same applies to the identity stored in the request (the user), whose `id` must be an integer.
