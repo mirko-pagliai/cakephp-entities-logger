@@ -7,4 +7,8 @@
   named `id` are supported. An `UnexpectedValueException` is thrown if the primary key is composite or if its value is
   not an integer;
 * the `EntitiesLogs` association added by `EntitiesLogBehavior` now filters the logs by the entity class that the table
-  has when the query is built, instead of the one it had when the behavior was added.
+  has when the query is built, instead of the one it had when the behavior was added;
+* added the `entities_logs_entity_idx` index on the `entity_class` and `entity_id` columns of the `entities_logs` table,
+  used to find the logs of an entity. You need to run the plugin migrations to apply it;
+* the `user_id` field of `EntitiesLogsTable` is now required on creation, like the other fields, so a missing value
+  gives a validation error instead of a database error.

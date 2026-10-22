@@ -56,6 +56,20 @@ class EntitiesLogsTableTest extends TestCase
     }
 
     /**
+     * Tests that the migrations create the index used to find the logs of an entity.
+     *
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
+    #[Test]
+    public function testEntityIndex(): void
+    {
+        $Index = $this->EntitiesLogs->getSchema()->getIndex('entities_logs_entity_idx');
+
+        $this->assertNotNull($Index);
+        $this->assertSame(['entity_class', 'entity_id'], $Index['columns']);
+    }
+
+    /**
      * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
      */
     #[Test]
@@ -93,6 +107,33 @@ class EntitiesLogsTableTest extends TestCase
 
         $this->assertEmpty($EntitiesLog->getErrors());
         $this->assertSame($ipAddress, $EntitiesLog->ip);
+    }
+
+    /**
+     * Tests for the `validationDefault()` method when a required field is missing.
+     *
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::validationDefault()
+     */
+    #[Test]
+    #[TestWith(['entity_class'])]
+    #[TestWith(['entity_id'])]
+    #[TestWith(['user_id'])]
+    #[TestWith(['type'])]
+    #[TestWith(['datetime'])]
+    public function testValidationDefaultWithMissingField(string $missingField): void
+    {
+        $data = [
+            'entity_class' => 'App\Model\Entity\Article',
+            'entity_id' => 1,
+            'user_id' => 1,
+            'type' => EntitiesLogType::Created,
+            'datetime' => '2025-06-16 20:22:06',
+        ];
+        unset($data[$missingField]);
+
+        $EntitiesLog = $this->EntitiesLogs->newEntity($data);
+
+        $this->assertSame([$missingField => ['_required' => 'This field is required']], $EntitiesLog->getErrors());
     }
 
     /**
