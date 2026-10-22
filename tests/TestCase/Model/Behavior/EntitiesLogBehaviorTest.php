@@ -443,6 +443,8 @@ class EntitiesLogBehaviorTest extends TestCase
     /**
      * Tests for the `saveEntitiesLog()` method, with the `checkRules` option, which is `true` by default.
      *
+     * @param array<string, bool> $config
+     *
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
      */
     #[Test]
