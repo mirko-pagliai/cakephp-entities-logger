@@ -15,3 +15,5 @@
 * `EntitiesLogBehavior` now throws an `UnexpectedValueException` if the entity being saved or deleted is a generic
   `Cake\ORM\Entity`, so a table must have its own entity class: otherwise the logs of tables with the same entity class
   would be mixed up.
+* the `README.md` file has been enriched and expanded, with new sections on requests and identity, supported primary
+  keys, entity class, IP address and logs on a different connection.
