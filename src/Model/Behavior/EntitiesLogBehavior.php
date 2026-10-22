@@ -9,7 +9,6 @@ use Cake\EntitiesLogger\Model\Entity\EntitiesLog;
 use Cake\EntitiesLogger\Model\Enum\EntitiesLogType;
 use Cake\EntitiesLogger\Model\Table\EntitiesLogsTable;
 use Cake\Event\EventInterface;
-use Cake\Http\ServerRequest;
 use Cake\I18n\DateTime;
 use Cake\ORM\Behavior;
 use Cake\ORM\Locator\LocatorAwareTrait;
@@ -33,16 +32,12 @@ class EntitiesLogBehavior extends Behavior
 
     public EntitiesLogsTable|Table $EntitiesLogsTable;
 
-    public ?ServerRequest $request = null;
-
     /**
      * @inheritDoc
      */
     public function __construct(Table $table, array $config = [])
     {
         parent::__construct($table, $config);
-
-        $this->request = Router::getRequest();
 
         if (empty($this->EntitiesLogsTable)) {
             $this->EntitiesLogsTable = $this->fetchTable(EntitiesLogsTable::class);
@@ -80,7 +75,8 @@ class EntitiesLogBehavior extends Behavior
             throw new MissingPropertyException('`' . $entity::class . '::$id` is null, expected non-null value.');
         }
 
-        if (!$this->request) {
+        $request = Router::getRequest();
+        if (!$request) {
             return null;
         }
 
@@ -89,7 +85,7 @@ class EntitiesLogBehavior extends Behavior
          *
          * @var \Cake\Datasource\EntityInterface|null $Identity
          */
-        $Identity = $this->request->getAttribute('identity');
+        $Identity = $request->getAttribute('identity');
         if (!$Identity) {
             throw new RuntimeException('Unable to retrieve identity. Request does not have an identity attribute.');
         }
@@ -106,8 +102,8 @@ class EntitiesLogBehavior extends Behavior
             'user_id' => $Identity->id,
             'type' => $entitiesLogType,
             'datetime' => new DateTime(),
-            'ip' => $this->request->clientIp(),
-            'user_agent' => $this->request->getHeaderLine('User-Agent'),
+            'ip' => $request->clientIp(),
+            'user_agent' => $request->getHeaderLine('User-Agent'),
         ]);
 
         return $EntitiesLog;
@@ -141,7 +137,7 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
-        if (!$this->request) {
+        if (!Router::getRequest()) {
             return;
         }
 
@@ -159,7 +155,7 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        if (!$this->request) {
+        if (!Router::getRequest()) {
             return;
         }
 

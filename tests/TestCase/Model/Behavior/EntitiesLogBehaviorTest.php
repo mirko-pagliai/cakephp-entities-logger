@@ -29,20 +29,27 @@ use PHPUnit\Framework\Attributes\TestWith;
 class EntitiesLogBehaviorTest extends TestCase
 {
     /**
+     * @inheritDoc
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Resets the router state, including the current request
+        Router::reload();
+    }
+
+    /**
      * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
      */
     #[Test]
     public function testConstruct(): void
     {
-        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100']]);
-        Router::setRequest($request);
-
         $Table = new Table();
         $Table->setEntityClass(Article::class);
 
         $Behavior = new EntitiesLogBehavior($Table);
         $this->assertSame(EntitiesLogsTable::class, $Behavior->EntitiesLogsTable->getRegistryAlias());
-        $this->assertSame($request, $Behavior->request);
 
         $Association = $Table->getAssociation('EntitiesLogs');
         $this->assertInstanceOf(HasMany::class, $Association);
@@ -110,7 +117,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
 
@@ -122,6 +129,34 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame(EntitiesLogType::Created, $result->type);
         $this->assertInstanceOf(DateTime::class, $result->datetime);
         $this->assertLessThanOrEqual(1, $result->datetime->diffInSeconds());
+    }
+
+    /**
+     * Tests that `buildEntity()` reads the request when it is called, not when the behavior is built.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityUsesTheCurrentRequest(): void
+    {
+        Router::setRequest((new ServerRequest())->withAttribute('identity', new User(['id' => 1])));
+
+        $Behavior = new class (new Table()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        // The request is replaced after the behavior has been built
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.200']]);
+        Router::setRequest($request->withAttribute('identity', new User(['id' => 7])));
+
+        $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame(7, $result->user_id);
+        $this->assertSame('192.168.0.200', $result->ip);
     }
 
     /**
@@ -157,7 +192,6 @@ class EntitiesLogBehaviorTest extends TestCase
                 return parent::buildEntity($entity, $entitiesLogType);
             }
         };
-        $Behavior->request = null;
 
         $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
         $this->assertNull($result);
@@ -183,7 +217,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', $Identity);
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $this->expectExceptionMessage($expectedExceptionMessage);
         $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
@@ -239,7 +273,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => $ipAddress]]);
         $request = $request->withAttribute('identity', new User(['id' => 1]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 4]), EntitiesLogType::Created);
         $this->assertInstanceOf(EntitiesLog::class, $result);
@@ -260,7 +294,6 @@ class EntitiesLogBehaviorTest extends TestCase
                 return parent::saveEntitiesLog($entity, $entitiesLogType);
             }
         };
-        $Behavior->request = null;
 
         $result = $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
         $this->assertNull($result);
@@ -290,7 +323,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
@@ -309,7 +342,6 @@ class EntitiesLogBehaviorTest extends TestCase
         $Table = new Table();
 
         $Behavior = new EntitiesLogBehavior($Table);
-        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterSave', [new Article(['id' => 3])]);
@@ -337,7 +369,7 @@ class EntitiesLogBehaviorTest extends TestCase
 
         $request = new ServerRequest();
         $request = $request->withAttribute('identity', new User(['id' => 5]));
-        $Behavior->request = $request;
+        Router::setRequest($request);
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
 
@@ -356,7 +388,6 @@ class EntitiesLogBehaviorTest extends TestCase
         $Table = new Table();
 
         $Behavior = new EntitiesLogBehavior($Table);
-        $Behavior->request = null;
 
         $Table->behaviors()->set('EntitiesLog', $Behavior);
         $event = $Table->dispatchEvent('Model.afterDelete', [new Article(['id' => 3])]);
