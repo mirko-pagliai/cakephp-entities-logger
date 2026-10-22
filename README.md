@@ -108,5 +108,11 @@ If you store the logs on a different connection (for example, with your own `Ent
 `defaultConnectionName()`), the two cannot be rolled back together: if the transaction is rolled back after the log has
 been written (for example, when the save is part of a larger transaction), the log is kept.
 
+In this case, the plugin migrations must be run on that connection too (here `logs`), otherwise they would try to modify
+the `entities_logs` table of the default connection, which doesn't exist:
+```bash
+bin/cake migrations migrate -p Cake/EntitiesLogger -c logs
+```
+
 The `afterSaveCommit()` and `afterDeleteCommit()` callbacks are not used, because CakePHP does not dispatch those
 events when the save is part of a larger transaction, and the log would be lost.
