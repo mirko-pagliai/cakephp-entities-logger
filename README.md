@@ -88,6 +88,12 @@ The logs of an entity are identified by the `entity_class` and `entity_id` colum
 added by the behavior finds the logs whose `entity_class` is exactly the entity class of the table. For this reason,
 the logs of entities of other classes (even subclasses) are not found.
 
+## IP address
+
+The IP address is taken from `ServerRequest::clientIp()`. If the application is behind a proxy or a load balancer, the
+request must trust it (`ServerRequest::$trustProxy`), otherwise the address of the proxy is logged instead of the one of
+the client.
+
 ## Logs on a different connection
 
 The log is saved in the `afterSave()` and `afterDelete()` callbacks of the table that loaded the behavior, so inside the

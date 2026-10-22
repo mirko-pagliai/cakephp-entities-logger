@@ -190,6 +190,33 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->assertSame(EntitiesLogType::Created, $result->type);
         $this->assertInstanceOf(DateTime::class, $result->datetime);
         $this->assertLessThanOrEqual(1, $result->datetime->diffInSeconds());
+        $this->assertSame('192.168.0.100', $result->ip);
+        $this->assertSame('MyBrowser/1.0', $result->user_agent);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method when the request does not have the `User-Agent` header.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithoutUserAgent(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema()) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        Router::setRequest($request);
+
+        $result = $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Created);
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame('', $result->user_agent);
     }
 
     /**
@@ -238,7 +265,7 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
-        $request = new ServerRequest();
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0']]);
         $request = $request->withAttribute('identity', new User(['id' => 5]));
         Router::setRequest($request);
 
