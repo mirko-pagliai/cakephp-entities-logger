@@ -1,12 +1,10 @@
 # 1.x branch
 ## 1.1 branch
 ### 1.1.0
-* added the `mergeInterval` option to `EntitiesLogBehavior`, in seconds. If the last log of an entity is an `Updated`
-  log made by the same user, from the same IP address and with the same user agent, within this interval, a new log is
-  not added and the `datetime` of that log is updated instead, so that changes made one after the other leave a single
-  log. The default is `300` (5 minutes): to log every change, as in previous versions, set it to `0`. `Created` and
-  `Deleted` logs are never merged;
-* the `README.md` file now documents the `checkRules` and `mergeInterval` options.
+* added the `mergeInterval` option to `EntitiesLogBehavior` (in seconds, default `300`): an `Updated` log is no longer
+  added if the last log of the entity is an `Updated` log made by the same user, from the same IP address and with the
+  same user agent within this interval, and the `datetime` of that log is updated instead. Set it to `0` to log every
+  change, as in previous versions.
 
 ## 1.0 branch
 ### 1.0.7
