@@ -12,11 +12,13 @@ use Cake\EntitiesLogger\Test\Fixture\ArticlesFixture;
 use Cake\EntitiesLogger\Test\Fixture\EntitiesLogsFixture;
 use Cake\EntitiesLogger\Test\Fixture\UsersFixture;
 use Cake\Http\ServerRequest;
+use Cake\I18n\DateTime;
 use Cake\ORM\Table;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\TestWith;
 
 /**
  * EntitiesLogBehaviorIntegrationTest.
@@ -56,6 +58,31 @@ class EntitiesLogBehaviorIntegrationTest extends TestCase
 
         $this->Articles = $this->fetchTable('Articles');
         $this->EntitiesLogs = $this->fetchTable(EntitiesLogsTable::class);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+
+        DateTime::setTestNow();
+    }
+
+    /**
+     * Internal method to edit the article with ID 1 at the given date and time.
+     *
+     * @param string $datetime The date and time at which the article is edited.
+     * @param string $title The new title of the article.
+     * @return void
+     */
+    private function editArticle(string $datetime, string $title): void
+    {
+        DateTime::setTestNow(new DateTime($datetime));
+
+        $Article = $this->Articles->get(1);
+        $this->Articles->saveOrFail($this->Articles->patchEntity($Article, compact('title')));
     }
 
     /**
@@ -193,5 +220,126 @@ class EntitiesLogBehaviorIntegrationTest extends TestCase
         $this->assertCount(2, $Article->entities_logs);
         $this->assertSame(EntitiesLogType::Created, $Article->entities_logs[0]->type);
         $this->assertSame(EntitiesLogType::Updated, $Article->entities_logs[1]->type);
+    }
+
+    /**
+     * Tests that the updates made within the default `mergeInterval` option (300 seconds, inclusive) are merged into a
+     * single log, which has the date and time of the last update. The `Created` log is never merged.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    #[TestWith([2, '2026-01-01 10:04:59'])]
+    #[TestWith([2, '2026-01-01 10:05:00'])]
+    #[TestWith([3, '2026-01-01 10:05:01'])]
+    public function testUpdateMergesCloseUpdates(int $expectedCount, string $secondUpdateAt): void
+    {
+        $this->editArticle('2026-01-01 10:00:00', 'First edit');
+        $this->editArticle($secondUpdateAt, 'Second edit');
+
+        $EntitiesLogs = $this->getEntitiesLogs($this->Articles->get(1));
+        $this->assertCount($expectedCount, $EntitiesLogs);
+        $this->assertSame(EntitiesLogType::Created, $EntitiesLogs[0]->type);
+        $this->assertSame(EntitiesLogType::Updated, $EntitiesLogs[$expectedCount - 1]->type);
+        $this->assertSame($secondUpdateAt, $EntitiesLogs[$expectedCount - 1]->datetime->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * Tests that, when the updates are merged, the existing log is updated and no other log is written.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testUpdateMergesIntoTheSameLog(): void
+    {
+        $this->editArticle('2026-01-01 10:00:00', 'First edit');
+        $FirstUpdatedLog = $this->getEntitiesLogs($this->Articles->get(1))[1];
+
+        $this->editArticle('2026-01-01 10:01:00', 'Second edit');
+        $EntitiesLogs = $this->getEntitiesLogs($this->Articles->get(1));
+
+        $this->assertCount(2, $EntitiesLogs);
+        $this->assertSame($FirstUpdatedLog->id, $EntitiesLogs[1]->id);
+    }
+
+    /**
+     * Tests that the updates are not merged if the user, the IP address or the user agent are not the same.
+     *
+     * @param array<string, string> $environment Environment of the second request.
+     * @param int $userId ID of the user of the second request.
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    #[TestWith([['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0'], 2])]
+    #[TestWith([['REMOTE_ADDR' => '192.168.0.101', 'HTTP_USER_AGENT' => 'MyBrowser/1.0'], 1])]
+    #[TestWith([['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'AnotherBrowser/2.0'], 1])]
+    public function testUpdateDoesNotMergeWithDifferentUserIpOrUserAgent(array $environment, int $userId): void
+    {
+        $this->editArticle('2026-01-01 10:00:00', 'First edit');
+
+        $request = new ServerRequest(compact('environment'));
+        Router::setRequest($request->withAttribute('identity', new User(['id' => $userId])));
+        $this->editArticle('2026-01-01 10:01:00', 'Second edit');
+
+        $this->assertCount(3, $this->getEntitiesLogs($this->Articles->get(1)));
+    }
+
+    /**
+     * Tests that only the last log is considered: if another user has updated the entity in the meantime, the update
+     * is not merged with the previous one of the first user, so that the history is kept.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testUpdateDoesNotMergeIfTheLastLogIsOfAnotherUser(): void
+    {
+        $this->editArticle('2026-01-01 10:00:00', 'First edit');
+
+        $request = new ServerRequest(['environment' => ['REMOTE_ADDR' => '192.168.0.100', 'HTTP_USER_AGENT' => 'MyBrowser/1.0']]);
+        Router::setRequest($request->withAttribute('identity', new User(['id' => 2])));
+        $this->editArticle('2026-01-01 10:01:00', 'Second edit');
+
+        Router::setRequest($request->withAttribute('identity', new User(['id' => 1])));
+        $this->editArticle('2026-01-01 10:02:00', 'Third edit');
+
+        $EntitiesLogs = $this->getEntitiesLogs($this->Articles->get(1));
+        $this->assertSame([1, 1, 2, 1], array_column($EntitiesLogs, 'user_id'));
+    }
+
+    /**
+     * Tests that, with the `mergeInterval` option set to `0`, the updates are never merged.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testUpdateWithMergeIntervalDisabled(): void
+    {
+        $this->Articles->behaviors()->get('EntitiesLog')->setConfig('mergeInterval', 0);
+
+        $this->editArticle('2026-01-01 10:00:00', 'First edit');
+        $this->editArticle('2026-01-01 10:00:01', 'Second edit');
+
+        $this->assertCount(3, $this->getEntitiesLogs($this->Articles->get(1)));
+    }
+
+    /**
+     * Tests that the `Created` and `Deleted` logs are never merged, even within the `mergeInterval` option.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::saveEntitiesLog()
+     */
+    #[Test]
+    public function testCreatedAndDeletedLogsAreNeverMerged(): void
+    {
+        DateTime::setTestNow(new DateTime('2026-01-01 10:00:00'));
+
+        $Article = $this->Articles->saveOrFail($this->Articles->newEntity(['title' => 'New article']));
+        $this->Articles->saveOrFail($this->Articles->patchEntity($Article, ['title' => 'Edited article']));
+        $this->Articles->deleteOrFail($Article);
+
+        $EntitiesLogs = $this->getEntitiesLogs($Article);
+        $this->assertSame(
+            [EntitiesLogType::Created, EntitiesLogType::Updated, EntitiesLogType::Deleted],
+            array_column($EntitiesLogs, 'type'),
+        );
     }
 }

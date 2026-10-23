@@ -22,6 +22,12 @@ class UsersFixture extends TestFixture
                 'first_name' => 'Mirko',
                 'last_name' => 'Pagliai',
             ],
+            [
+                'id' => 2,
+                'email' => 'anotherfakemail@example.com',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+            ],
         ];
 
         parent::init();
