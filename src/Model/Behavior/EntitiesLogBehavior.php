@@ -27,6 +27,7 @@ use UnexpectedValueException;
  * ```
  * $this->addBehavior('Cake/EntitiesLogger.EntitiesLog', [
  *    'checkRules' => true, // optional, default true
+ *    'mergeInterval' => 300, // optional, in seconds, default 300 (5 minutes), 0 disables the merge
  * ]);
  * ```
  */
@@ -137,6 +138,10 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Internal method to save a log entry for the given entity based on the specified log type.
      *
+     * An `Updated` log is not added if the last log of the entity is an `Updated` log made by the same user, from the
+     * same IP address and with the same user agent, within the `mergeInterval` option (in seconds): the `datetime` of
+     * that log is updated instead. `Created` and `Deleted` logs are never merged.
+     *
      * @param \Cake\Datasource\EntityInterface $entity The entity for which the log is being created.
      * @param \Cake\EntitiesLogger\Model\Enum\EntitiesLogType $entitiesLogType The type of log entry to be created.
      * @return \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null The saved log entity or `null` if the log could not be created.
@@ -146,6 +151,30 @@ class EntitiesLogBehavior extends Behavior
         $EntitiesLog = $this->buildEntity($entity, $entitiesLogType);
         if (!$EntitiesLog) {
             return null;
+        }
+
+        /** @var string|int $mergeInterval */
+        $mergeInterval = $this->getConfig('mergeInterval', 300);
+        $mergeInterval = (int)$mergeInterval;
+        if ($entitiesLogType === EntitiesLogType::Updated && $mergeInterval > 0) {
+            /** @var \Cake\EntitiesLogger\Model\Entity\EntitiesLog|null $LastEntitiesLog */
+            $LastEntitiesLog = $this->EntitiesLogsTable->find()
+                ->where(['entity_class' => $EntitiesLog->entity_class, 'entity_id' => $EntitiesLog->entity_id])
+                ->orderByDesc('id')
+                ->first();
+
+            // Only the last log is considered, so that the changes made by other users in the meantime are not lost
+            if (
+                $LastEntitiesLog &&
+                $LastEntitiesLog->type === $EntitiesLog->type &&
+                $LastEntitiesLog->user_id === $EntitiesLog->user_id &&
+                $LastEntitiesLog->ip === $EntitiesLog->ip &&
+                $LastEntitiesLog->user_agent === $EntitiesLog->user_agent &&
+                $LastEntitiesLog->datetime >= $EntitiesLog->datetime->subSeconds($mergeInterval)
+            ) {
+                $LastEntitiesLog->datetime = $EntitiesLog->datetime;
+                $EntitiesLog = $LastEntitiesLog;
+            }
         }
 
         return $this->EntitiesLogsTable->saveOrFail($EntitiesLog, [

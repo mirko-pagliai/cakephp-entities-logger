@@ -1,4 +1,11 @@
 # 1.x branch
+## 1.1 branch
+### 1.1.0
+* added the `mergeInterval` option to `EntitiesLogBehavior` (in seconds, default `300`): an `Updated` log is no longer
+  added if the last log of the entity is an `Updated` log made by the same user, from the same IP address and with the
+  same user agent within this interval, and the `datetime` of that log is updated instead. Set it to `0` to log every
+  change, as in previous versions.
+
 ## 1.0 branch
 ### 1.0.7
 * `EntitiesLogBehavior` now reads the current request from `Router` each time a log is created, instead of keeping the

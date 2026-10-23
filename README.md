@@ -62,6 +62,42 @@ class ArticlesTable extends Table
 }
 ```
 
+## Options
+
+The behavior accepts the following options:
+```php
+$this->addBehavior('Cake/EntitiesLogger.EntitiesLog', [
+    'checkRules' => true,
+    'mergeInterval' => 300,
+]);
+```
+
+* `checkRules` (default `true`): whether the rules of `EntitiesLogsTable` are checked when the log is saved (for
+  example, that the user exists). With `false`, the rules are not checked;
+* `mergeInterval` (default `300`): the interval, in seconds, within which close updates are merged into a single log.
+  With `0`, the updates are not merged and every change is logged. See below.
+
+## Merging close updates
+
+A user who changes the same entity several times in a short time (for example, it is saved, a mistake is noticed and it is
+saved again) would leave a log for each change. For this reason, when an entity is updated, a new log is not added if
+the **last** log of that entity:
+
+* is an `Updated` log (the `Created` and `Deleted` logs are never merged);
+* was made by the same user, from the same IP address and with the same user agent;
+* is not older than the `mergeInterval` option (300 seconds, 5 minutes, by default).
+
+In this case the `datetime` of that log is updated, so the log always shows the time of the last change. Nothing else is
+written or deleted.
+
+Some things to keep in mind:
+
+* only the last log is considered: if another user has changed the entity in the meantime, a new log is added, so that
+  the history is kept (the changes of A, B and then A again are three logs);
+* the interval is counted from the last log, not from the first change. If the same user keeps changing the entity, and
+  never leaves more than the interval between two changes, only one log is kept;
+* the logs that already exist are not modified.
+
 ## Requests and identity
 
 The log stores the user who made the change, so it is created only when there is a request:
