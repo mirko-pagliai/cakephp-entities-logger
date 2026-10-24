@@ -17,12 +17,14 @@ updated or deleted. Each log stores:
 
 For example, after a few changes the `entities_logs` table contains:
 
-| id | entity_class               | entity_id | user_id | type    | datetime            | ip           |
-|----|----------------------------|-----------|---------|---------|---------------------|--------------|
-| 1  | `App\Model\Entity\Article` | 1         | 1       | created | 2026-10-20 09:30:00 | 192.168.0.10 |
-| 2  | `App\Model\Entity\Article` | 2         | 1       | created | 2026-10-20 09:42:00 | 192.168.0.10 |
-| 3  | `App\Model\Entity\Article` | 1         | 2       | updated | 2026-10-20 15:10:00 | 192.168.0.20 |
-| 4  | `App\Model\Entity\Article` | 2         | 1       | deleted | 2026-10-21 08:05:00 | 192.168.0.10 |
+| id | entity_class               | entity_id | user_id | type    | datetime            | ip                           | user_agent                    |
+|----|----------------------------|-----------|---------|---------|---------------------|------------------------------|-------------------------------|
+| 1  | `App\Model\Entity\Article` | 1         | 1       | created | 2026-10-20 09:30:00 | 192.168.0.10                 | Mozilla/5.0 (…) Firefox/131.0 |
+| 2  | `App\Model\Entity\Article` | 2         | 1       | created | 2026-10-20 09:42:00 | 192.168.0.10                 | Mozilla/5.0 (…) Firefox/131.0 |
+| 3  | `App\Model\Entity\Article` | 1         | 2       | updated | 2026-10-20 15:10:00 | 2001:db8:85a3::8a2e:370:7334 | Mozilla/5.0 (…) Chrome/130.0  |
+| 4  | `App\Model\Entity\Article` | 2         | 1       | deleted | 2026-10-21 08:05:00 | 192.168.0.10                 | Mozilla/5.0 (…) Firefox/131.0 |
+
+The `ip` column holds both IPv4 and IPv6 addresses. The user agents are shortened here.
 
 The plugin tells you **who** changed an entity and **when**, but it does not store **what** has changed: the values of
 the fields are not saved.
@@ -264,6 +266,13 @@ an `UnexpectedValueException` is thrown when the entity is saved or deleted.
 The IP address is taken from `ServerRequest::clientIp()`. If the application is behind a proxy or a load balancer, the
 request must trust it (`ServerRequest::$trustProxy`), otherwise the address of the proxy is logged instead of the one of
 the client.
+
+Both IPv4 and IPv6 addresses are supported. The `ip` column holds up to 39 characters, the length of an IPv6 address in
+its full form, and the address is stored as `ServerRequest::clientIp()` returns it, without normalizing it.
+
+The address must be a valid IP address, without a port or a zone id (such as `203.0.113.5:4444` or `fe80::1%eth0`).
+Otherwise the log does not pass the validation and a `PersistenceFailedException` is thrown, so the entity is not saved
+either. This can happen if a trusted proxy adds the port to the `X-Forwarded-For` header.
 
 ## Logs on a different connection
 
