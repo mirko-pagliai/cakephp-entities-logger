@@ -70,6 +70,21 @@ class EntitiesLogsTableTest extends TestCase
     }
 
     /**
+     * Tests that the `ip` column is nullable and long enough for an IPv6 address (39 characters).
+     *
+     * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
+     */
+    #[Test]
+    public function testIpColumn(): void
+    {
+        $Column = $this->EntitiesLogs->getSchema()->getColumn('ip');
+
+        $this->assertNotNull($Column);
+        $this->assertSame(39, $Column['length']);
+        $this->assertTrue($Column['null']);
+    }
+
+    /**
      * @link \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable::initialize()
      */
     #[Test]
