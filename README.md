@@ -47,8 +47,8 @@ the fields are not saved.
 ## Requirements
 
 * PHP 8.2 or later;
-* CakePHP 5.1 or later;
-* the `cakephp/migrations` plugin, to create the table with the migrations of this plugin;
+* CakePHP 5.1.10 or later;
+* the `cakephp/migrations` plugin (4.5 or later), to create the table with the migrations of this plugin;
 * a `Users` table in your application: each log belongs to the user who made the change, and by default the user must
   exist when the log is saved (see the `checkRules` option);
 * an authenticated user: the current request must have an `identity` attribute (for example, the one set by the
@@ -314,6 +314,21 @@ $this->addBehavior('EntitiesLog');
 
 The table must be set before calling the parent constructor, because the constructor uses it as the target of the
 `EntitiesLogs` association. The protected methods `buildEntity()` and `saveEntitiesLog()` can be overridden too.
+
+Your table must be named `EntitiesLogsTable`, so that its alias is `EntitiesLogs`, the one used by the association to
+sort the logs. It also needs its own entity class, that extends the one of the plugin. By default CakePHP looks for it
+next to your table, so for `App\Model\Table\EntitiesLogsTable` it is `App\Model\Entity\EntitiesLog`:
+```php
+namespace App\Model\Entity;
+
+use Cake\EntitiesLogger\Model\Entity\EntitiesLog as BaseEntitiesLog;
+
+class EntitiesLog extends BaseEntitiesLog
+{
+}
+```
+If that class does not exist, CakePHP would use the generic `Cake\ORM\Entity` and saving the logs would fail. If your
+entity has another name or namespace, set it in the `initialize()` method of your table with `setEntityClass()`.
 
 ## Versioning
 For transparency and insight into our release cycle and to maintain backward compatibility,
