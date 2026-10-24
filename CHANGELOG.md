@@ -1,6 +1,6 @@
 # 1.x branch
 ## 1.1 branch
-### 1.1.0
+### 1.1.1
 * added the `mergeInterval` option to `EntitiesLogBehavior` (in seconds, default `300`): an `Updated` log is no longer
   added if the last log of the entity is an `Updated` log made by the same user, from the same IP address and with the
   same user agent within this interval, and the `datetime` of that log is updated instead. Set it to `0` to log every
@@ -10,6 +10,7 @@
   that field, instead of the primary key (which can also be composite), and every change is logged as `Updated`, also
   when an entity is created or deleted. If an entity is moved to another group, the previous group is logged too. The
   `EntitiesLogs` association finds the logs by that field.
+* the minimum required version of CakePHP is now `5.1.10`.
 
 ## 1.0 branch
 ### 1.0.7
