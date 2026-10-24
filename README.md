@@ -8,24 +8,6 @@
 
 Logs who created, updated or deleted your CakePHP entities, and when.
 
-  * [Requirements](#requirements)
-  * [Installation](#installation)
-  * [Create the table](#create-the-table)
-  * [Add the behavior](#add-the-behavior)
-  * [Reading the logs](#reading-the-logs)
-  * [What is logged](#what-is-logged)
-  * [Options](#options)
-  * [Merging close updates](#merging-close-updates)
-  * [Grouping entities](#grouping-entities)
-  * [Requests and identity](#requests-and-identity)
-  * [Supported primary keys](#supported-primary-keys)
-  * [Entity class](#entity-class)
-  * [IP address](#ip-address)
-  * [Logs on a different connection](#logs-on-a-different-connection)
-  * [Customizing](#customizing)
-  * [Versioning](#versioning)
-
-
 Add a behavior to the tables you want, and the plugin writes a log every time an entity of those tables is created,
 updated or deleted. Each log stores:
 
@@ -44,6 +26,23 @@ For example, after a few changes the `entities_logs` table contains:
 
 The plugin tells you **who** changed an entity and **when**, but it does not store **what** has changed: the values of
 the fields are not saved.
+
+  * [Requirements](#requirements)
+  * [Installation](#installation)
+  * [Create the table](#create-the-table)
+  * [Add the behavior](#add-the-behavior)
+  * [Reading the logs](#reading-the-logs)
+  * [What is logged](#what-is-logged)
+  * [Options](#options)
+  * [Merging close updates](#merging-close-updates)
+  * [Grouping entities](#grouping-entities)
+  * [Requests and identity](#requests-and-identity)
+  * [Supported primary keys](#supported-primary-keys)
+  * [Entity class](#entity-class)
+  * [IP address](#ip-address)
+  * [Logs on a different connection](#logs-on-a-different-connection)
+  * [Customizing](#customizing)
+  * [Versioning](#versioning)
 
 ## Requirements
 
@@ -318,4 +317,4 @@ The table must be set before calling the parent constructor, because the constru
 
 ## Versioning
 For transparency and insight into our release cycle and to maintain backward compatibility,
-this package will be maintained under the [Semantic Versioning guidelines](http://semver.org).
+this package will be maintained under the [Semantic Versioning guidelines](https://semver.org).
