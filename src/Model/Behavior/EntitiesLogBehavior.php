@@ -53,8 +53,8 @@ class EntitiesLogBehavior extends Behavior
          * Automatically sets a "has many" association to the table that loaded the behavior.
          */
         if (!$table->hasAssociation('EntitiesLogs')) {
-            /** @phpstan-ignore cake.addAssociation.existClass */
             $Association = $table->hasMany('EntitiesLogs', [
+                'className' => EntitiesLogsTable::class,
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
                 // The entity class is read when the query is built, because the table can change it after this point
