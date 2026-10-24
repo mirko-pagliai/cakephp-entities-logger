@@ -573,17 +573,24 @@ class EntitiesLogBehaviorTest extends TestCase
             }
         };
 
+        $savedOptions = null;
+
         /** @var \Cake\EntitiesLogger\Model\Table\EntitiesLogsTable&\Mockery\MockInterface $EntitiesLogsTable */
         $EntitiesLogsTable = Mockery::mock(EntitiesLogsTable::class);
         $EntitiesLogsTable
             ->shouldReceive('saveOrFail')
             ->once()
-            ->with(Mockery::type(EntitiesLog::class), ['checkRules' => $expectedCheckRules])
-            ->andReturn(new EntitiesLog());
+            ->andReturnUsing(function (EntitiesLog $EntitiesLog, array $options) use (&$savedOptions): EntitiesLog {
+                $savedOptions = $options;
+
+                return $EntitiesLog;
+            });
 
         $Behavior->EntitiesLogsTable = $EntitiesLogsTable;
 
         $Behavior->saveEntitiesLog(new Article(['id' => 3]), EntitiesLogType::Created);
+
+        $this->assertSame(['checkRules' => $expectedCheckRules], $savedOptions);
     }
 
     /**
