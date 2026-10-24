@@ -54,16 +54,22 @@ class EntitiesLogBehavior extends Behavior
          */
         if (!$table->hasAssociation('EntitiesLogs')) {
             /** @phpstan-ignore cake.addAssociation.existClass */
-            $table->hasMany('EntitiesLogs', [
+            $Association = $table->hasMany('EntitiesLogs', [
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
-                // With the `groupField` option, the logs are those of the group, so they are found by that field
-                'bindingKey' => $this->getConfig('groupField'),
                 // The entity class is read when the query is built, because the table can change it after this point
                 'conditions' => fn(QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
                 'sort' => ['EntitiesLogs.datetime' => 'ASC'],
                 'strategy' => 'select',
             ]);
+
+            /** @var string|null $groupField */
+            $groupField = $this->getConfig('groupField');
+
+            // With the `groupField` option, the logs are those of the group, so they are found by that field
+            if ($groupField !== null) {
+                $Association->setBindingKey($groupField);
+            }
         }
     }
 

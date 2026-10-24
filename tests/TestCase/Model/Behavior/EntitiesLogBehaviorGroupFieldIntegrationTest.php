@@ -97,7 +97,7 @@ class EntitiesLogBehaviorGroupFieldIntegrationTest extends TestCase
     {
         DateTime::setTestNow(new DateTime($datetime));
 
-        $Article = $id === null ? $this->Articles->newEmptyEntity() : $this->Articles->get($id);
+        $Article = $id ? $this->Articles->get($id) : $this->Articles->newEmptyEntity();
 
         /** @var \App\Model\Entity\Article $SavedArticle */
         $SavedArticle = $this->Articles->saveOrFail($this->Articles->patchEntity($Article, $data));

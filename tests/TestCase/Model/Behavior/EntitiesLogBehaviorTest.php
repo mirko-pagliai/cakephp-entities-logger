@@ -91,8 +91,8 @@ class EntitiesLogBehaviorTest extends TestCase
 
         new EntitiesLogBehavior($Table, ['groupField' => 'category_id']);
 
-        /** @var \Cake\ORM\Association\HasMany $Association */
         $Association = $Table->getAssociation('EntitiesLogs');
+        $this->assertInstanceOf(HasMany::class, $Association);
         $this->assertSame('category_id', $Association->getBindingKey());
         $this->assertSame('entity_id', $Association->getForeignKey());
     }
