@@ -78,6 +78,28 @@ class EntitiesLogBehaviorTest extends TestCase
     /**
      * Test for the `__construct()` method.
      *
+     * Tests that, with the `groupField` option, the `EntitiesLogs` association finds the logs by that field of the
+     * table, instead of the primary key.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::__construct()
+     */
+    #[Test]
+    public function testConstructWithGroupField(): void
+    {
+        $Table = new Table();
+        $Table->setEntityClass(Article::class);
+
+        new EntitiesLogBehavior($Table, ['groupField' => 'category_id']);
+
+        /** @var \Cake\ORM\Association\HasMany $Association */
+        $Association = $Table->getAssociation('EntitiesLogs');
+        $this->assertSame('category_id', $Association->getBindingKey());
+        $this->assertSame('entity_id', $Association->getForeignKey());
+    }
+
+    /**
+     * Test for the `__construct()` method.
+     *
      * Tests that the conditions of the `EntitiesLogs` association use the entity class that the table has when the
      * query is built, not the one it had when the behavior was built.
      *
@@ -371,6 +393,92 @@ class EntitiesLogBehaviorTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage('Unable to log `' . Article::class . '`: the primary key must be an integer.');
         $Behavior->buildEntity(new Article(['id' => $entityId]), EntitiesLogType::Created);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method with the `groupField` option.
+     *
+     * The logs are identified by the value of that field, so the primary key is not even read and it can be composite.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    #[TestWith([10])]
+    #[TestWith(['10'])]
+    public function testBuildEntityWithGroupField(int|string $categoryId): void
+    {
+        $Table = $this->getTableWithSchema(
+            ['article_id' => 'integer', 'tag_id' => 'integer', 'category_id' => 'integer'],
+            ['article_id', 'tag_id'],
+        );
+        $Behavior = new class ($Table, ['groupField' => 'category_id']) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        $request = new ServerRequest();
+        $request = $request->withAttribute('identity', new User(['id' => 5]));
+        Router::setRequest($request);
+
+        $result = $Behavior->buildEntity(
+            new Article(['article_id' => 3, 'tag_id' => 4, 'category_id' => $categoryId]),
+            EntitiesLogType::Updated,
+        );
+
+        $this->assertInstanceOf(EntitiesLog::class, $result);
+        $this->assertSame(Article::class, $result->entity_class);
+        $this->assertSame(10, $result->entity_id);
+        $this->assertSame(EntitiesLogType::Updated, $result->type);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method with the `groupField` option when the entity does not have that field.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    public function testBuildEntityWithGroupFieldAndNoGroup(): void
+    {
+        $Behavior = new class ($this->getTableWithSchema(), ['groupField' => 'category_id']) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(MissingPropertyException::class);
+        $this->expectExceptionMessage('`' . Article::class . '::$category_id` is null, expected non-null value.');
+        $Behavior->buildEntity(new Article(['id' => 3]), EntitiesLogType::Updated);
+    }
+
+    /**
+     * Tests for the `buildEntity()` method with the `groupField` option when the value of that field is not an integer.
+     *
+     * @link \Cake\EntitiesLogger\Model\Behavior\EntitiesLogBehavior::buildEntity()
+     */
+    #[Test]
+    #[TestWith(['550e8400-e29b-41d4-a716-446655440000'])]
+    #[TestWith(['abc'])]
+    #[TestWith([3.5])]
+    public function testBuildEntityWithGroupFieldNonInteger(string|float $categoryId): void
+    {
+        $Table = $this->getTableWithSchema(['id' => 'integer', 'category_id' => 'string']);
+        $Behavior = new class ($Table, ['groupField' => 'category_id']) extends EntitiesLogBehavior {
+            public function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
+            {
+                return parent::buildEntity($entity, $entitiesLogType);
+            }
+        };
+
+        Router::setRequest(new ServerRequest());
+
+        $this->expectException(UnexpectedValueException::class);
+        $this->expectExceptionMessage('Unable to log `' . Article::class . '`: the `category_id` field must be an integer.');
+        $Behavior->buildEntity(new Article(['id' => 3, 'category_id' => $categoryId]), EntitiesLogType::Updated);
     }
 
     /**

@@ -69,13 +69,16 @@ The behavior accepts the following options:
 $this->addBehavior('Cake/EntitiesLogger.EntitiesLog', [
     'checkRules' => true,
     'mergeInterval' => 300,
+    'groupField' => null,
 ]);
 ```
 
 * `checkRules` (default `true`): whether the rules of `EntitiesLogsTable` are checked when the log is saved (for
   example, that the user exists). With `false`, the rules are not checked;
 * `mergeInterval` (default `300`): the interval, in seconds, within which close updates are merged into a single log.
-  With `0`, the updates are not merged and every change is logged. See below.
+  With `0`, the updates are not merged and every change is logged. See below;
+* `groupField` (default `null`): the name of the field that groups the entities, to log the changes of the group instead
+  of those of each single entity. See below.
 
 ## Merging close updates
 
@@ -94,9 +97,42 @@ Some things to keep in mind:
 
 * only the last log is considered: if another user has changed the entity in the meantime, a new log is added, so that
   the history is kept (the changes of A, B and then A again are three logs);
-* the interval is counted from the last log, not from the first change. If the same user keeps changing the entity, and
+* the interval is counted from the last log, not from the first change. If the same user keeps changing the entity and
   never leaves more than the interval between two changes, only one log is kept;
 * the logs that already exist are not modified.
+
+## Grouping entities
+
+Some entities make sense only as part of a group. For example, the lines of an order are always handled together, and
+what you want to log is that the order has been changed, no matter which line.
+
+With the `groupField` option you set the name of the field that identifies the group (here, `order_id`):
+```php
+$this->addBehavior('Cake/EntitiesLogger.EntitiesLog', ['groupField' => 'order_id']);
+```
+
+With this option:
+
+* the `entity_id` column of the log is the value of that field, **not** the primary key. The `entity_class` column is
+  still the entity class of the table. So the logs of a group are those with the entity class of the table and the
+  `entity_id` equal to the value of the field (for example, the id of the order);
+* every change is logged as `Updated`. Creating, editing or deleting an entity is always a change of the group, so with
+  this option the `Created` and `Deleted` logs are **never** written. The log tells that the group has been changed, by
+  whom and when, but not which entity of the group has been changed, nor how;
+* if an entity is moved from one group to another (the value of the field is changed), both groups have been changed, so
+  an `Updated` log is written for each of them. This works for entities that have been read from the database and then
+  modified;
+* the field must have a value, and it must be an integer, as for the primary key. Otherwise a `MissingPropertyException`
+  or an `UnexpectedValueException` is thrown when the entity is saved or deleted. For this reason an entity cannot be
+  removed from its group (the field cannot be set to `null`);
+* the primary key of the table is not used, so it can also be composite;
+* close updates are merged as described above, and the group is what counts: the changes made by the same user to any
+  entity of the same group, within the interval, are a single log;
+* the `EntitiesLogs` association added by the behavior finds the logs by the field instead of the primary key. So all
+  the entities of a group have the same logs, those of the group.
+
+If the table already has logs, don't add this option: they identify the entities by their primary key, so they would be
+mixed up with those of the groups.
 
 ## Requests and identity
 

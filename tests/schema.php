@@ -11,6 +11,10 @@ return [
             'title' => [
                 'type' => 'string',
             ],
+            'category_id' => [
+                'type' => 'integer',
+                'null' => true,
+            ],
         ],
         'constraints' => [
             'primary' => [

@@ -5,6 +5,11 @@
   added if the last log of the entity is an `Updated` log made by the same user, from the same IP address and with the
   same user agent within this interval, and the `datetime` of that log is updated instead. Set it to `0` to log every
   change, as in previous versions.
+* added the `groupField` option to `EntitiesLogBehavior`, the name of the field that groups the entities, to log the
+  changes of the group instead of those of each single entity. With this option the logs are identified by the value of
+  that field, instead of the primary key (which can also be composite), and every change is logged as `Updated`, also
+  when an entity is created or deleted. If an entity is moved to another group, the previous group is logged too. The
+  `EntitiesLogs` association finds the logs by that field.
 
 ## 1.0 branch
 ### 1.0.7

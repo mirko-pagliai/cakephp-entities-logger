@@ -10,6 +10,7 @@ use Cake\ORM\Entity;
  *
  * @property int $id
  * @property string $title
+ * @property int|null $category_id
  * @property array<\Cake\EntitiesLogger\Model\Entity\EntitiesLog> $entities_logs
  */
 class Article extends Entity

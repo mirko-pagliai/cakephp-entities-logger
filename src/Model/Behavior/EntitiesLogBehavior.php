@@ -28,6 +28,7 @@ use UnexpectedValueException;
  * $this->addBehavior('Cake/EntitiesLogger.EntitiesLog', [
  *    'checkRules' => true, // optional, default true
  *    'mergeInterval' => 300, // optional, in seconds, default 300 (5 minutes), 0 disables the merge
+ *    'groupField' => null, // optional, name of the field that groups the entities, default null
  * ]);
  * ```
  */
@@ -56,6 +57,8 @@ class EntitiesLogBehavior extends Behavior
             $table->hasMany('EntitiesLogs', [
                 'targetTable' => $this->EntitiesLogsTable,
                 'foreignKey' => 'entity_id',
+                // With the `groupField` option, the logs are those of the group, so they are found by that field
+                'bindingKey' => $this->getConfig('groupField'),
                 // The entity class is read when the query is built, because the table can change it after this point
                 'conditions' => fn(QueryExpression $exp): QueryExpression => $exp->eq('entity_class', $table->getEntityClass()),
                 'sort' => ['EntitiesLogs.datetime' => 'ASC'],
@@ -73,7 +76,7 @@ class EntitiesLogBehavior extends Behavior
      * request is unavailable.
      * @throws \Cake\Datasource\Exception\MissingPropertyException If the entity or identity is missing required properties.
      * @throws \UnexpectedValueException If the entity is a generic `Cake\ORM\Entity`, the primary key of the table is
-     * composite or the entity id is not an integer.
+     * composite or the entity id (or the value of the `groupField` option) is not an integer.
      * @throws \RuntimeException If the request does not contain an identity attribute.
      */
     protected function buildEntity(EntityInterface $entity, EntitiesLogType $entitiesLogType): ?EntitiesLog
@@ -88,19 +91,25 @@ class EntitiesLogBehavior extends Behavior
             throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the table must have its own entity class.');
         }
 
-        $primaryKey = $this->table()->getPrimaryKey();
-        if (is_array($primaryKey)) {
+        /** @var string|null $groupField */
+        $groupField = $this->getConfig('groupField');
+
+        // With the `groupField` option, the logs are identified by the value of that field instead of the primary key
+        $idField = $groupField ?? $this->table()->getPrimaryKey();
+        if (is_array($idField)) {
             throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: a single-column primary key is required.');
         }
 
         // Checks for the entity's id
-        $entityId = $entity->get($primaryKey);
+        $entityId = $entity->get($idField);
         if ($entityId === null) {
-            throw new MissingPropertyException('`' . $entity::class . '::$' . $primaryKey . '` is null, expected non-null value.');
+            throw new MissingPropertyException('`' . $entity::class . "::$$idField` is null, expected non-null value.");
         }
 
         if (!Validation::isInteger($entityId)) {
-            throw new UnexpectedValueException('Unable to log `' . $entity::class . '`: the primary key must be an integer.');
+            $idLabel = $groupField === null ? 'the primary key' : "the `$groupField` field";
+
+            throw new UnexpectedValueException('Unable to log `' . $entity::class . "`: $idLabel must be an integer.");
         }
 
         /**
@@ -185,19 +194,44 @@ class EntitiesLogBehavior extends Behavior
     /**
      * Handles the logic to be executed after an entity is saved.
      *
+     * With the `groupField` option, the log is always an `Updated` one, because the group is what changes. If the entity
+     * has been moved from one group to another, the previous group is modified too, so it gets its own log. The result
+     * of the event is the log of the current group.
+     *
      * @param \Cake\Event\EventInterface<\Cake\ORM\Table> $event The event triggered after the save operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was saved.
      * @return void
      */
     public function afterSave(EventInterface $event, EntityInterface $entity): void
     {
-        $type = $entity->isNew() ? EntitiesLogType::Created : EntitiesLogType::Updated;
+        /** @var string|null $groupField */
+        $groupField = $this->getConfig('groupField');
+        $type = $entity->isNew() && $groupField === null ? EntitiesLogType::Created : EntitiesLogType::Updated;
 
         $event->setResult($this->saveEntitiesLog($entity, $type));
+
+        if ($groupField === null || $entity->isNew()) {
+            return;
+        }
+
+        /** @var string|int|null $previousGroup */
+        $previousGroup = $entity->getOriginal($groupField);
+
+        /** @var string|int $currentGroup */
+        $currentGroup = $entity->get($groupField);
+        if ($previousGroup !== null && (string)$previousGroup !== (string)$currentGroup) {
+            // The entity is cloned, so that it has the previous group, without changing the saved one
+            $PreviousGroupEntity = clone $entity;
+            $PreviousGroupEntity->set($groupField, $previousGroup, ['setter' => false]);
+
+            $this->saveEntitiesLog($PreviousGroupEntity, EntitiesLogType::Updated);
+        }
     }
 
     /**
      * Handles the logic to be executed after an entity is deleted.
+     *
+     * With the `groupField` option, the log is an `Updated` one, because the group is what changes.
      *
      * @param \Cake\Event\EventInterface<\Cake\ORM\Table> $event The event triggered after the delete operation.
      * @param \Cake\Datasource\EntityInterface $entity The entity instance that was deleted.
@@ -205,6 +239,8 @@ class EntitiesLogBehavior extends Behavior
      */
     public function afterDelete(EventInterface $event, EntityInterface $entity): void
     {
-        $event->setResult($this->saveEntitiesLog($entity, EntitiesLogType::Deleted));
+        $type = $this->getConfig('groupField') === null ? EntitiesLogType::Deleted : EntitiesLogType::Updated;
+
+        $event->setResult($this->saveEntitiesLog($entity, $type));
     }
 }
